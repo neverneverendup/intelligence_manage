@@ -1,0 +1,151 @@
+#coding=utf-8
+import requests
+from werkzeug.exceptions import NotFound
+from datetime import date,datetime
+from apps.services.modelsCRUD import *
+
+# 测试python数据类型和json类型之间的对应关系
+def test_return_json():
+    response_data = {}
+    response_data["success"] = True
+    response_data["test_num"] = 100.00
+    response_data['test_array'] = {"id":1,"name":"jerry","test_list":[1,2,3]}
+    response_data["respCoda"] = "0"
+    response_data["respMsg"] = "操作成功"
+    response_data["data"] = None
+    return json.dumps(response_data, ensure_ascii=False)
+
+def get_item_info_from_gengxin_server():
+    # entry data server
+    #dataServer.initSubject.url = http://106.2.224.58:1019/occurance
+    #dataServer.submitted.url = http://106.2.224.58:1019/updatePage
+
+    # other server
+    #otherServer.checkToken.url = http://113.207.56.4:9527/user/check
+
+    url = 'http://106.2.224.58:1019/occurance'
+    data ={}
+    data["subjectId"] = 100
+    data["topic_name"] = "宠物"
+    data["need_domain"] = 0
+    data["description"] = "狗（拉丁文Canis lupus familiaris）属于脊索动物门、脊椎动物亚门、哺乳纲、真兽亚纲、食肉目、裂脚亚目、犬科动物。中文亦称“犬”，狗分布于世界各地。狗与马、牛、羊、猪、鸡并称“六畜”。有科学家认为哈士奇狗是由早期人类从灰狼驯化而来，驯养时间在4万年前~1.5万年前。被称为“人类最忠实的朋友”，是饲养率最高的宠物，其寿命大约在12~18年 [1]  。在中国文化中，狗属于十二生肖之一，在十二生肖中的第11位。 [2]"
+    data["documents"] = ["狗（拉丁文Canis lupus familiaris）属于脊索动物门、脊椎动物亚门、哺乳纲、真兽亚纲、食肉目、裂脚亚目、犬科动物。中文亦称“犬”，狗分布于世界各地。狗与马、牛、羊、猪、鸡并称“六畜”。有科学家认为哈士奇狗是由早期人类从灰狼驯化而来，驯养时间在4万年前~1.5万年前。被称为“人类最忠实的朋友”，是饲养率最高的宠物，其寿命大约在12~18年 [1]  。在中国文化中，狗属于十二生肖之一，在十二生肖中的第11位","宠物（pet）指人们为了精神目的，而不是为了经济目的而豢养的生物。传统的宠物是指哺乳纲或鸟纲的动物，养着用于玩赏和作伴。实际生活中的宠物包括鱼纲、爬行纲、两栖纲、昆虫，甚至植物，用于观赏、作伴、舒缓人们的精神压力。 [1]"]
+    resp = requests.post(url,json.dumps(data))
+    print(resp.content)
+    resp = resp.json()
+    print(resp)
+    if resp['status'] == "success":
+        print("数据解析成功！")
+        print(resp['data'])
+    # 问问学长 接口要传的数据的含义，以及为什么status一直是数据正在解析
+
+def send_data_to_http_server():
+    url = 'http://127.0.0.1:5000/index/'
+    data ={}
+    data["subjectId"] = 100
+    data["topic_name"] = "宠物"
+    data["need_domain"] = 0
+    data["description"] = "狗（拉丁文Canis lupus familiaris）属于脊索动物门、脊椎动物亚门、哺乳纲、真兽亚纲、食肉目、裂脚亚目、犬科动物。中文亦称“犬”，狗分布于世界各地。狗与马、牛、羊、猪、鸡并称“六畜”。有科学家认为哈士奇狗是由早期人类从灰狼驯化而来，驯养时间在4万年前~1.5万年前。被称为“人类最忠实的朋友”，是饲养率最高的宠物，其寿命大约在12~18年 [1]  。在中国文化中，狗属于十二生肖之一，在十二生肖中的第11位。 [2]"
+    data["documents"] = ["狗（拉丁文Canis lupus familiaris）属于脊索动物门、脊椎动物亚门、哺乳纲、真兽亚纲、食肉目、裂脚亚目、犬科动物。中文亦称“犬”，狗分布于世界各地。狗与马、牛、羊、猪、鸡并称“六畜”。有科学家认为哈士奇狗是由早期人类从灰狼驯化而来，驯养时间在4万年前~1.5万年前。被称为“人类最忠实的朋友”，是饲养率最高的宠物，其寿命大约在12~18年 [1]  。在中国文化中，狗属于十二生肖之一，在十二生肖中的第11位","宠物（pet）指人们为了精神目的，而不是为了经济目的而豢养的生物。传统的宠物是指哺乳纲或鸟纲的动物，养着用于玩赏和作伴。实际生活中的宠物包括鱼纲、爬行纲、两栖纲、昆虫，甚至植物，用于观赏、作伴、舒缓人们的精神压力。 [1]"]
+    resp = requests.post(url,json.dumps(data))
+    print(resp.content)
+    resp = resp.json()
+    print(resp)
+    # if resp['status'] == "success":
+    #     print("数据解析成功！")
+    #     print(resp['data'])
+    # 问问学长 接口要传的数据的含义，以及为什么status一直是数据正
+
+class DateEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.strftime('%Y-%m-%d %H:%M:%S')
+        elif isinstance(obj, date):
+            return obj.strftime("%Y-%m-%d")
+        else:
+            return json.JSONEncoder.default(self, obj)
+
+def send_data_to_startAssignTask_server():
+    demand = {}
+    demand["subtaskDemand"] = 10
+    demand["teamDemand"] = "需要十个人"
+    demand["timeDemand"] = datetime.now()
+    #demand["test_data"] = {"a":100.00,"b":None,"c":["d","e","f"]}
+    # data = json.dumps(demand,ensure_ascii=False)
+
+    url = 'http://127.0.0.1:5000/api/startAssignTask'
+    data = {}
+    data['id'] = 8888
+    data['name'] = '众智化专题'
+    data['description'] = '众智化专题项目测试'
+    data['demand'] = demand
+    data['reward'] = 888
+    data['field'] = ['生物','医学']
+    data['document'] = ["文档串1","文档串2"]
+    data['token'] = '19980307'
+    print(data)
+    print(json.dumps(data,cls=DateEncoder))
+    resp = requests.post(url, json.dumps(data,cls=DateEncoder))
+    print(resp.content)
+    resp = resp.json()
+    print(resp)
+
+def send_data_to_jumpIntoAssignTask_server():
+
+    url = 'http://127.0.0.1:5000/api/jumpIntoAssignTask'
+    data = {}
+    data['id'] = 12345678
+    data['token'] = '19980308'
+
+    resp = requests.post(url, json.dumps(data))
+    #print(resp.content)
+    resp = resp.json()
+    print(resp)
+
+def send_data_to_startTask_server():
+
+    url = 'http://127.0.0.1:5000/api/startTask'
+    data = {}
+    data['taskId'] = 12345678
+    data['resultFileType'] = 'pdf'
+    data['member'] = [{"userId":3,"role":2,"subTaskId":[5]},{"userId":4,"role":2,"subTaskId":[5]},{"userId":7,"role":3,"subTaskId":[6]}]
+
+    resp = requests.post(url, json.dumps(data))
+    #print(resp.content)
+    resp = resp.json()
+    print(resp)
+
+def send_data_to_getRate_server():
+
+    url = 'http://127.0.0.1:5000/api/getRate'
+    url = 'http://101.200.34.92:8081/api/getRate'
+
+    data = {}
+    data['taskId'] = 12345678
+
+    resp = requests.post(url, json.dumps(data))
+    #print(resp.content)
+    resp = resp.json()
+    print(resp)
+
+def send_data_to_subTask_server():
+
+    url = 'http://127.0.0.1:5000/api/subTask'
+    data = {}
+    data['taskId'] = 12345678
+    data['token'] = "19980101"
+    resp = requests.post(url, json.dumps(data))
+    #print(resp.content)
+    resp = resp.json()
+    print(resp)
+
+if __name__ == '__main__':
+    #send_data_to_http_server()
+    #send_data_to_startAssignTask_server()
+    send_data_to_jumpIntoAssignTask_server()
+    #send_data_to_startTask_server()
+    #send_data_to_getRate_server()
+    #send_data_to_subTask_server()
+
+    #get_item_info_from_gengxin_server()
+
