@@ -1,8 +1,10 @@
 from apps import create_app
 from flask import Flask, request, jsonify, flash,redirect,url_for
 import json
+from flask_cors import *
 
 app = create_app()
+CORS(app, supports_credentials=True)
 #apps.app_context().push()
 @app.route('/')
 def hello_world():
@@ -24,4 +26,4 @@ def index():
 
 if __name__ == '__main__':
     app.run(debug=True)
-    #apps.run(host="0.0.0.0", port=8081, debug=True)
+    #app.run(host="0.0.0.0", port=8081, debug=True)

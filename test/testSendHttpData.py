@@ -75,13 +75,13 @@ def send_data_to_startAssignTask_server():
 
     url = 'http://127.0.0.1:5000/api/startAssignTask'
     data = {}
-    data['id'] = 8888
+    data['id'] = 987654
     data['name'] = '众智化专题'
     data['description'] = '众智化专题项目测试'
     data['demand'] = demand
     data['reward'] = 888
     data['field'] = ['生物','医学']
-    data['document'] = ["文档串1","文档串2"]
+    data['document'] = ["猫，属于猫科动物，分家猫、野猫，是全世界家庭中较为广泛的宠物。家猫的祖先据推测是古埃及的沙漠猫，波斯的波斯猫，已经被人类驯化了3500年（但未像狗一样完全地被驯化）。一般的猫：头圆、颜面部短，前肢五指，后肢四趾，趾端具锐利而弯曲的爪，爪能伸缩。夜行性。以伏击的方式猎捕其它动物，大多能攀援上树。猫的趾底有脂肪质肉垫，以免在行走时发出声响，捕猎时也不会惊跑鼠。行进时爪子处于收缩状态，防止爪被磨钝，在捕鼠和攀岩时会伸出来。"]
     data['token'] = '19980307'
     print(data)
     print(json.dumps(data,cls=DateEncoder))
@@ -92,10 +92,10 @@ def send_data_to_startAssignTask_server():
 
 def send_data_to_jumpIntoAssignTask_server():
 
-    url = 'http://127.0.0.1:5000/api/jumpIntoAssignTask'
+    url = 'http://127.0.0.1:5000/api/assignTask'
     data = {}
-    data['id'] = 12345678
-    data['token'] = '19980308'
+    data['id'] = 987654
+    data['token'] = '19980307'
 
     resp = requests.post(url, json.dumps(data))
     #print(resp.content)
@@ -108,7 +108,7 @@ def send_data_to_startTask_server():
     data = {}
     data['taskId'] = 12345678
     data['resultFileType'] = 'pdf'
-    data['member'] = [{"userId":3,"role":2,"subTaskId":[5]},{"userId":4,"role":2,"subTaskId":[5]},{"userId":7,"role":3,"subTaskId":[6]}]
+    data['member'] = [{"userId":3,"role":2,"subTaskId":[34,35]},{"userId":4,"role":2,"subTaskId":[36,38,39]},{"userId":7,"role":3,"subTaskId":[37]}]
 
     resp = requests.post(url, json.dumps(data))
     #print(resp.content)
@@ -132,8 +132,54 @@ def send_data_to_subTask_server():
 
     url = 'http://127.0.0.1:5000/api/subTask'
     data = {}
-    data['taskId'] = 12345678
+    data['taskId'] = 987654
     data['token'] = "19980101"
+    resp = requests.post(url, json.dumps(data))
+    #print(resp.content)
+    resp = resp.json()
+    print(resp)
+
+def send_data_to_taskSplit_server():
+
+    url = 'http://127.0.0.1:5000/api/taskSplit'
+    data = {}
+    data['taskId'] = 987654
+    data['token'] = "19980307"
+    data["subtask"] =[{"name":"新建词条","content":"新建3条词条","type":1,"money":500.00,"itemCount":3},{"name":"审核词条","content":"需要五个审核人员，审核词条,itemCount代表审核人员数量","type":3,"money":500.00,"userCount":5},{"name":"完善词条","content":"完善初始化词条","type":2,"money":100.00,"itemCount":5,"inited_item_ids":[52, 53]}]
+
+    resp = requests.post(url, json.dumps(data))
+    #print(resp.content)
+    resp = resp.json()
+    print(resp)
+
+def send_data_to_searchUserId_server():
+
+    url = 'http://101.200.34.92:8081/api/searchUserId'
+    data = {}
+    data['taskId'] = 987654
+    data['userId'] = 4
+
+    resp = requests.post(url, json.dumps(data))
+    #print(resp.content)
+    resp = resp.json()
+    print(resp)
+
+def send_data_to_updateEditItem_server():
+
+    url = 'http://101.200.34.92:8081/api/updateEditItem'
+    data = {}
+    data["item_id"] = 94
+    data["original_id"] = 123
+    data["name"] = "兽亚纲12345"
+    data["relation"] = []
+    data["field"] = []
+    data["info_box"] = []
+    data["intro"] = ""
+    data["imageUrl"] = ""
+    data["content"] = ""
+    data["task_id"] = 1
+    data["reference"] = []
+
     resp = requests.post(url, json.dumps(data))
     #print(resp.content)
     resp = resp.json()
@@ -142,10 +188,14 @@ def send_data_to_subTask_server():
 if __name__ == '__main__':
     #send_data_to_http_server()
     #send_data_to_startAssignTask_server()
-    send_data_to_jumpIntoAssignTask_server()
+    #send_data_to_jumpIntoAssignTask_server()
     #send_data_to_startTask_server()
     #send_data_to_getRate_server()
     #send_data_to_subTask_server()
 
     #get_item_info_from_gengxin_server()
 
+    #send_data_to_taskSplit_server()
+    #send_data_to_searchUserId_server()
+
+    send_data_to_updateEditItem_server()

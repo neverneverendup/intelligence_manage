@@ -1,27 +1,9 @@
 from flask import request, jsonify, Blueprint
 import json
 #from apps.models.models import apps
-from apps.services import outServices
-
+from apps.services import outServices, inServices
 api = Blueprint('api', __name__, url_prefix='/api')
 
-# @apps.route('/')
-# def hello_world():
-#     print("访问主页成功")
-#     return 'hello world'
-#
-# @apps.route('/index/', methods=['GET','POST'])
-# def index():
-#     if request.method == 'POST':
-#         data = request.get_data()
-#         data = json.loads(data)
-#         print(data)
-#         return jsonify({"success":True,"data":None})
-#     elif request.method=="GET":
-#         print('GET')
-#     return 'index'
-
-#@apps.route('/api/startAssignTask/', methods=['POST'])
 @api.route('/startAssignTask', methods=['GET', 'POST'])
 def api_startAssignTask():
     if request.method == 'POST':
@@ -31,7 +13,6 @@ def api_startAssignTask():
         return outServices.startAssignTask(data['id'], data['name'], data['description'], data['demand'], data['reward'], data['field'], data['document'], data['token'])
     return 'you see this /startAssignTask in get!'
 
-#@apps.route('/api/jumpIntoAssignTask/', methods=['POST'])
 @api.route('/assignTask', methods=['GET', 'POST'])
 def jumpIntoAssignTask():
     if request.method == 'POST':
@@ -49,7 +30,6 @@ def resultNotice():
         print(data)
         return outServices.resultNotice(data)
 
-#@apps.route('/api/startTask/', methods=['POST'])
 @api.route('/startTask', methods=['POST'])
 def startTask():
     if request.method == 'POST':
@@ -58,7 +38,6 @@ def startTask():
         print(data)
         return outServices.startTask(data['taskId'], data['resultFileType'], data['member'])
 
-#@apps.route('/api/getRate/', methods=['POST'])
 @api.route('/getRate', methods=['POST'])
 def getRate():
     if request.method == 'POST':
@@ -67,7 +46,6 @@ def getRate():
         print(data)
         return outServices.getRate(data['taskId'])
 
-#@apps.route('/api/subTask/', methods=['POST'])
 @api.route('/subTask', methods=['POST'])
 def subTask():
     if request.method == 'POST':
@@ -76,7 +54,6 @@ def subTask():
         print(data)
         return outServices.subTask(data['taskId'], data['token'])
 
-#@apps.route('/api/entry/initSubjectAssignment', methods=['POST'])
 @api.route('/initSubjectAssignment', methods=['POST'])
 def initSubjectAssignment():
     if request.method == 'POST':
@@ -85,6 +62,47 @@ def initSubjectAssignment():
         outServices.initTaskItems(data)
         print(data)
         return outServices.pact_response_json_data(True, "0", "", None)
+
+@api.route('/taskSplit', methods=['POST'])
+def taskSplit():
+    if request.method == 'POST':
+        data = request.get_data()
+        data = json.loads(data)
+        print(data)
+        return outServices.taskSplit(data["task_id"], data["token"], data["subtask"])
+
+@api.route('/searchUserId', methods=['POST'])
+def searchUserId():
+    if request.method == 'POST':
+        data = request.get_data()
+        data = json.loads(data)
+        #inServices.searchUserId(data["userId"], data["taskId"])
+        print(data)
+        return inServices.searchUserId(data["user_id"], data["task_id"])
+
+@api.route('/updateEditItem', methods=['POST'])
+def updateEditItem():
+    if request.method == 'POST':
+        data = request.get_data()
+        data = json.loads(data)
+        print(data)
+        return inServices.updateEditItem(data["item_id"], data["original_id"], data["name"],data["relation"] ,data["field"], data["info_box"],data["intro"], data["imageUrl"], data["content"],data["task_id"],data["reference"])
+
+@api.route('/getCheckItem', methods=['POST'])
+def getCheckItem():
+    if request.method == 'POST':
+        data = request.get_data()
+        data = json.loads(data)
+        print(data)
+        return inServices.getCheckItem(data["task_id"])
+
+@api.route('/updateCheckItem', methods=['POST'])
+def updateCheckItem():
+    if request.method == 'POST':
+        data = request.get_data()
+        data = json.loads(data)
+        print(data)
+        return inServices.updateCheckItem(data["item_id"], data["checkResult"], data["user_id"],data["content"])
 
 if __name__ == '__main__':
     #apps.run(debug=True)

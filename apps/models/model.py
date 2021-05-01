@@ -32,6 +32,10 @@ class User(db.Model):
     # 用户角色1 2 3 对应负责人、普通成员和审核成员
     role = db.Column(db.Integer, nullable=False)
     token = db.Column(db.String(255),nullable=False,unique=True)
+
+    subtasks = db.Column(db.String(255), default="[]")
+
+    #validateItemCount = db.Column(db.Integer, default=0)
     # 一个用户可以完成多个子任务
     #subtasks = db.relationship('Subtask', secondary=user_subtask_relationship, back_populates=db.backref('users'))
     def __repr__(self):
@@ -39,64 +43,20 @@ class User(db.Model):
 
     def serialization(self):
         return {
-            "id": self.id,
+            "user_id": self.id,
             "name": self.name,
             "role": self.role,
             "token": self.token
         }
 
-class Item(db.Model):
-    __tablename__ = 'item'
-    id = db.Column(db.Integer, autoincrement=True, primary_key=True)
-    name = db.Column(db.String(255),nullable=True)
-    content = db.Column(db.TEXT, nullable=True)
-    imageUrl = db.Column(db.String(255), nullable=True)
-    status = db.Column(db.Integer, nullable=False) # 1 2 3 已创建 已完成 已审核
-    isInitialize = db.Column(db.Integer)
-    # 0 刚创建， 1已初始化  2 待完善 3 等待审核中 4 通过审核 5 未审核通过，需要继续编辑
-    # 0 空状态  1 初始化状态 2 待编辑状态 3 待审核状态 4 审核未通过状态 5 已审核状态
-    field = db.Column(db.String(255))
-    info_box = db.Column(db.TEXT)
-    intro = db.Column(db.TEXT)
-    original_id = db.Column(db.Integer)
-    relation = db.Column(db.TEXT)
-    task_id = db.Column(db.Integer, db.ForeignKey('task.id'))
-
-    # 外键
-    #subtask_id = db.Column(db.Integer,db.ForeignKey('subtask.id'))
-
-    def __repr__(self):
-        return '<Item %r %r %r %r>' % (self.id, self.name, self.status, self.task_id)
-
-    def serialization(self):
-        return {
-            "id":self.id,
-            "name":self.name,
-            "content":self.content,
-            "imageUrl":self.imageUrl,
-            "status":self.status,
-            "field":json.loads(self.field),
-            "info_box":json.loads(self.info_box),
-            "isInitialize": self.isInitialize,
-            "original_id": self.original_id,
-            "task_id":self.task_id,
-            "intro":self.intro,
-            "relation":json.loads(self.relation)
-        }
-
-class Validator_Item_Mapping(db.Model):
-    __tablename__ = 'validator_item_mapping'
-    id = db.Column(db.Integer, autoincrement=True, primary_key=True)
-    item_id = db.Column(db.Integer, autoincrement=True)
-    user_id = db.Column(db.Integer, autoincrement=True)
-
-    # 审核结果 ，0驳回，1通过，
-    result = db.Column(db.Integer,nullable=True)
-    # 审核意见
-    content = db.Column(db.TEXT, nullable=True)
-
-    def __repr__(self):
-        return '<Item %r %r %r %r %r>' % (self.id, self.user_id, self.item_id, self.result, self.content)
+    def add_subtask(self, subtask):
+        if not self.subtasks:
+            self.subtasks = json.dumps(subtask)
+        else:
+            old = json.loads(self.subtasks)
+            old = old + subtask
+            self.subtasks = json.dumps(old)
+        db.session.commit()
 
 class Task(db.Model):
     __tablename__ = 'task'
@@ -131,8 +91,8 @@ class Task(db.Model):
     def serialization(self):
         #print(type(self.reward))
         return {
-            "id":self.id,
-            "headId":self.get_header_id(),
+            "task_id":self.id,
+            "head_id":self.get_header_id(),
             "name":self.name,
             "description":self.description,
             #"demand":json.loads(self.demand),
@@ -156,6 +116,7 @@ class Task(db.Model):
 
     def initialize(self):
         self.hasInitialize = 1
+        db.session.add(self)
         db.session.commit()
 
     def get_items(self):
@@ -163,7 +124,6 @@ class Task(db.Model):
         for it in self.items:
             data.append(it.serialization())
         return data
-
 
 class Subtask(db.Model):
     __tablename__ = 'subtask'
@@ -177,8 +137,9 @@ class Subtask(db.Model):
     task_id = db.Column(db.Integer, db.ForeignKey('task.id'))
     # 外键
     item_id = db.Column(db.Integer)
-    user_id = db.Column(db.String(255))
-
+    #user_id = db.Column(db.String(255))
+    # 是否已完成
+    # status = db.Column(db.Integer, default=0)
 
     # 一个子任务包含多个词条
     #items = db.relationship('Item', secondary=item_subtask_mapping, backref='subtask',lazy='dynamic')
@@ -190,7 +151,7 @@ class Subtask(db.Model):
 
     def serialization(self):
         return {
-            "id":self.id,
+            "subtask_id":self.id,
             "name":self.name,
             "content":self.content,
             "money":str(self.money),
@@ -206,6 +167,64 @@ class Subtask(db.Model):
             old.append(uid)
             self.user_id = json.dumps(old)
         db.session.commit()
+
+class Item(db.Model):
+    __tablename__ = 'item'
+    id = db.Column(db.Integer, autoincrement=True, primary_key=True)
+    name = db.Column(db.String(255),nullable=True)
+    content = db.Column(db.TEXT, nullable=True)
+    imageUrl = db.Column(db.String(255), nullable=True)
+    status = db.Column(db.Integer, nullable=False) # 1 2 3 已创建 已完成 已审核
+    isInitialize = db.Column(db.Integer, default=0)
+    # 0 刚创建， 1已初始化  2 待完善 3 等待审核中 4 通过审核 5 未审核通过，需要继续编辑
+    # 0 空状态  1 初始化状态 2 待编辑状态 3 待审核状态 4 审核未通过状态 5 已审核状态
+    field = db.Column(db.String(255), nullable=True, default="[]")
+    info_box = db.Column(db.TEXT, nullable=True, default="[]")
+    intro = db.Column(db.TEXT, default="")
+    original_id = db.Column(db.Integer)
+    relation = db.Column(db.TEXT, default="[]")
+    reference = db.Column(db.TEXT, default="[]")
+    task_id = db.Column(db.Integer, db.ForeignKey('task.id'))
+    has_selected_supply = db.Column(db.Integer, default=0)
+    # 外键
+    #subtask_id = db.Column(db.Integer,db.ForeignKey('subtask.id'))
+
+    def __repr__(self):
+        return '<Item %r %r %r %r>' % (self.id, self.name, self.status, self.task_id)
+
+    def serialization(self):
+        return {
+            "item_id":self.id,
+            "name":self.name,
+            "content":self.content,
+            "imageUrl":self.imageUrl,
+            "status":self.status,
+            "field":json.loads(self.field),
+            "info_box":json.loads(self.info_box),
+            "isInitialize": self.isInitialize,
+            "original_id": self.original_id,
+            "task_id":self.task_id,
+            "intro":self.intro,
+            "relation":json.loads(self.relation),
+            "reference": json.loads(self.reference),
+            "has_selected_supply":self.has_selected_supply
+        }
+
+class Validator_Item_Mapping(db.Model):
+    __tablename__ = 'validator_item_mapping'
+    id = db.Column(db.Integer, autoincrement=True, primary_key=True)
+    item_id = db.Column(db.Integer)
+    user_id = db.Column(db.Integer)
+    task_id = db.Column(db.Integer)
+
+    # 审核结果 ，0驳回，1通过，
+    result = db.Column(db.Integer,nullable=True)
+    # 审核意见
+    content = db.Column(db.TEXT, nullable=True)
+
+    def __repr__(self):
+        return '<Item %r %r %r %r %r>' % (self.id, self.user_id, self.item_id, self.result, self.content)
+
 
 if __name__ == '__main__':
     # db.drop_all()

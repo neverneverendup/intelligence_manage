@@ -17,10 +17,31 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="D:\myspace\cs\code\课题项目\intelligence_manage\apps\services\inServices.py">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="D:\myspace\cs\code\课题项目\intelligence_manage\apps\services\modelsCRUD.py">
           <value>
             <Attribute>
               <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="D:\myspace\cs\code\课题项目\intelligence_manage\apps\services\outServices.py">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="D:\myspace\cs\code\课题项目\intelligence_manage\test\testSendHttpData.py">
+          <value>
+            <Attribute>
+              <option name="separator" value=":" />
             </Attribute>
           </value>
         </entry>

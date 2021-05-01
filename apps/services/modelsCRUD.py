@@ -17,8 +17,8 @@ def db_add_task(id, name, description, timeDemand, subtaskDemand, teamDemand, re
     db.session.add(task)
     db.session.commit()
 
-def db_add_item(name, original_id, relation, field, info_box, intro, imageUrl, content, task_id, status):
-    item = Item(name=name, original_id=original_id,status=status, relation=relation, field=field, info_box=info_box, intro=intro, imageUrl=imageUrl, content=content, task_id=task_id)
+def db_add_item(name, original_id, relation, field, info_box, intro, imageUrl, content, task_id, status, reference):
+    item = Item(name=name, original_id=original_id,status=status, relation=relation, field=field, info_box=info_box, intro=intro, imageUrl=imageUrl, content=content, task_id=task_id ,reference=reference)
     db.session.add(item)
     db.session.commit()
 
@@ -45,7 +45,7 @@ def db_add_batch_insert_subtask(name, content, money, type, task_id, itemCount):
     subtask_list = []
     for idx in range(1, itemCount+1):
         nid = latest_item_id + idx
-        item = Item(name='', status=0, task_id=task_id)
+        item = Item(name="", status=0, task_id=task_id, field="[]",info_box="[]", relation="[]",reference="[]")
         item_list.append(item)
         subtask = Subtask(name=name, content=content, money=money, type=type, task_id=task_id, item_id=nid)
         subtask_list.append(subtask)
@@ -56,6 +56,10 @@ def db_add_batch_insert_subtask(name, content, money, type, task_id, itemCount):
 def db_add_batch_supply_subtask(name, content, money, type, task_id, inited_item_ids):
     subtask_list = []
     for item_id in inited_item_ids:
+        item = db_select_item_by_id(item_id)
+        if item:
+            item.has_selected_supply = 1
+            db_update_item(item)
         subtask = Subtask(name=name, content=content, money=money, type=type, task_id=task_id, item_id=item_id)
         subtask_list.append(subtask)
 
@@ -96,8 +100,16 @@ def db_update_task(task):
     db.session.add(task)
     db.session.commit()
 
+def db_update_user(user):
+    db.session.add(user)
+    db.session.commit()
+
 def db_update_subtask(subtask):
     db.session.add(subtask)
+    db.session.commit()
+
+def db_update_item(item):
+    db.session.add(item)
     db.session.commit()
 
 def db_select_user_by_id(id):
