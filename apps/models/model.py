@@ -3,6 +3,7 @@ from flask import Flask
 import pymysql
 from .. import config
 import json
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 import datetime
 
 app = Flask(__name__)
@@ -15,7 +16,8 @@ class User(db.Model):
     name = db.Column(db.String(255),nullable=True)
     # 用户角色1 2 3 对应负责人、普通成员和审核成员
     role = db.Column(db.Integer, nullable=False)
-    token = db.Column(db.String(255),nullable=False,unique=True)
+    outside_token = db.Column(db.String(255),unique=True)
+    inside_token = db.Column(db.String(255),unique=True)
     subtasks = db.Column(db.String(255), default="[]")
 
     def __repr__(self):
@@ -26,7 +28,8 @@ class User(db.Model):
             "user_id": self.id,
             "name": self.name,
             "role": self.role,
-            "token": self.token
+            "outside_token": self.outside_token,
+            "inside_token":self.inside_token
         }
 
     def add_subtask(self, subtaskId):
@@ -46,6 +49,18 @@ class User(db.Model):
         self.subtasks = json.dumps(old)
         db.session.commit()
 
+    def create_token(self):
+        s = Serializer(config.Config.SECRET_KEY, )
+        # 接收用户id转换与编码
+        token = s.dumps({"user_id": self.id}).decode('ascii')
+        return token
+
+    # @classmethod
+    # def get_or_create(self,user_id):
+    #     user = User.query.get(user_id)
+    #     if not user:
+    #         user = User()
+
 class Task(db.Model):
     __tablename__ = 'task'
     id = db.Column(db.Integer, autoincrement=True, primary_key=True)
@@ -62,7 +77,7 @@ class Task(db.Model):
     field = db.Column(db.String(255),nullable=True)
     # 文档可能要存Json
     document = db.Column(db.TEXT)
-    token = db.Column(db.String(255),nullable=False)
+    user_id = db.Column(db.Integer,nullable=False)
     resultFileType = db.Column(db.String(30), nullable=True)
     # 一个任务对应多个子任务
     subtasks = db.relationship('Subtask', backref='task')

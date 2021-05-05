@@ -1,6 +1,8 @@
 import json
 from ..services.modelsCRUD import *
+from apps.auth.auth import *
 from datetime import date, datetime
+import requests
 
 def pact_response_json_data(success, respCode, respMsg, data):
     respones_data = {}
@@ -10,6 +12,26 @@ def pact_response_json_data(success, respCode, respMsg, data):
     respones_data['data'] = data
     #print(respones_data)
     return json.dumps(respones_data, ensure_ascii=False,cls=DateEncoder)
+
+# 外部用户token校验接口
+def outside_token_validation(token):
+    url = 'http://113.207.56.4:9527/user/check'
+    data = {}
+    data['token'] = token
+    resp = requests.post(url, json.dumps(data))
+    return resp.json()
+
+
+def check_and_add_user(resp, token):
+    user_id = resp["data"]["data"]["id"]
+    inside_token = generate_token(user_id)
+    name=""
+    role=1
+    user = User.query.get(user_id)
+    if not user:
+        db_add_user_with_id(id=user, name=name, role=role, outside_token=token, inside_token=inside_token)
+        user = User.query.get(user_id)
+    return user
 
 def userTokenValidation(token):
     user = db_select_user_by_token(token)

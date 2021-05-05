@@ -1,5 +1,6 @@
 from flask import request, jsonify, Blueprint
 import json
+from apps.auth.auth import auth
 from apps.services import outServices, inServices
 api = Blueprint('api', __name__, url_prefix='/api/entry')
 
@@ -78,16 +79,18 @@ def changeTask():
         print(data)
         return outServices.changeTask(data["taskId"], data["DetailsTaskId"], data["userID"], data["userName"])
 
-@api.route('/searchUserId', methods=['POST'])
+@api.route('/searchUserId', methods=['GET','POST'])
+@auth.login_required
 def searchUserId():
     if request.method == 'POST':
         data = request.get_data()
         data = json.loads(data)
         #inServices.searchUserId(data["userId"], data["taskId"])
         print(data)
-        return inServices.searchUserId(data["user_id"], data["task_id"])
+        return inServices.searchUserId(data["userId"], data["taskId"])
 
 @api.route('/updateEditItem', methods=['POST'])
+@auth.login_required
 def updateEditItem():
     if request.method == 'POST':
         data = request.get_data()
@@ -96,6 +99,7 @@ def updateEditItem():
         return inServices.updateEditItem(data["item_id"], data["original_id"], data["name"],data["relation"] ,data["field"], data["info_box"],data["intro"], data["imageUrl"], data["content"],data["task_id"],data["reference"])
 
 @api.route('/getCheckItem', methods=['POST'])
+@auth.login_required
 def getCheckItem():
     if request.method == 'POST':
         data = request.get_data()
@@ -104,6 +108,7 @@ def getCheckItem():
         return inServices.getCheckItem(data["task_id"])
 
 @api.route('/updateCheckItem', methods=['POST'])
+@auth.login_required
 def updateCheckItem():
     if request.method == 'POST':
         data = request.get_data()

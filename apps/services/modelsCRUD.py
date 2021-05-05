@@ -7,12 +7,17 @@ def db_add_user(name, role, token):
     db.session.add(user)
     db.session.commit()
 
-def db_add_task(id, name, description, reward, field, document, token):
+def db_add_user_with_id(id, name, role, token):
+    # 1 2 3 对应管理者 普通人员 审核人员
+    user = User(id=id, name=name, role=role, token=token)
+    db.session.add(user)
+    db.session.commit()
 
+def db_add_task(id, name, description, reward, field, document, user_id):
     if id != None:
-        task = Task(id=id, name=name, description=description, reward=reward, field=field, document=document, token=token)
+        task = Task(id=id, name=name, description=description, reward=reward, field=field, document=document, user_id=user_id)
     else:
-        task = Task(name=name, description=description, reward=reward, field=field, document=document, token=token)
+        task = Task(name=name, description=description, reward=reward, field=field, document=document, user_id=user_id)
     db.session.add(task)
     db.session.commit()
 

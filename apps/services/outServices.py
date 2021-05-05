@@ -1,21 +1,26 @@
 #coding=utf-8
-import requests
 from werkzeug.exceptions import NotFound
-from apps.services.modelsCRUD import *
 from apps.libs.utils import *
 
+def ssologin(token):
+    resp = outside_token_validation(token)
+    print(resp)
+    if resp["success"] == False:
+        return False, None
+    user = check_and_add_user(resp=resp, token=token)
+    return True, user
+
 def startAssignTask(id, name, description, reward, field, document, token):
-    if not userTokenValidation(token):
+    flag, user = ssologin(token)
+    if not flag:
         return pact_response_json_data(False, "-1", "用户校验失败", None)
 
     result = send_task_info_to_gengxin_server(id,description,document)
     if result["status"] == "success":
         # 插入初始化词条
         initTaskItems(result)
-    # timeDemand = demand['timeDemand']
-    # subtaskDemand = demand['subtaskDemand']
-    # teamDemand = demand['teamDemand']
-    db_add_task(id, name, description, reward, json.dumps(field, ensure_ascii=False), json.dumps(document, ensure_ascii=False), token)
+
+    db_add_task(id, name, description, reward, json.dumps(field, ensure_ascii=False), json.dumps(document, ensure_ascii=False), user.id)
     return pact_response_json_data(True,"0","操作成功",None)
 
 # 这个接口插入数据默认值有待继续调整，不知道为何空串json不能解析出来
@@ -69,11 +74,12 @@ def jumpIntoAssignTask(id, token):
         print(e)
         return pact_response_json_data(False, "-1", "任务未找到", None)
 
-    if not userTokenValidation(token):
+    flag, user = ssologin(token)
+    if not flag:
         return pact_response_json_data(False, "-1", "用户校验失败", None)
 
     # 校验任务负责人token是否匹配
-    if token == task.token:
+    if user.id == task.user_id:
         print(task.hasInitialize)
         if task.hasInitialize == 0 :
             print('未通过')
@@ -101,7 +107,8 @@ def resultNotice(post_data):
 
 # 提交任务划分结果，这里要做的事情包括三类子任务，新建任务、完善任务和审核任务。
 # 新建任务需要提交完整的子任务信息，审核任务需要提交审核人员数量，完善任务需要提交已初始化词条id。
-def taskSplit(taskId, token, subtask):
+# 最新改动，取消输入token参数
+def taskSplit(taskId, subtask):
     # 接收子任务详情情况，将数据插入数据库
     try:
         task = db_select_task_by_id(taskId)
@@ -109,11 +116,11 @@ def taskSplit(taskId, token, subtask):
         print(e)
         return pact_response_json_data(False, "-1", "任务未找到", None)
 
-    if not userTokenValidation(token):
-        return pact_response_json_data(False, "-1", "用户校验失败", None)
-
-    if token != task.token:
-        return pact_response_json_data(False, "-1", "任务-负责人不匹配", None)
+    # if not userTokenValidation(token):
+    #     return pact_response_json_data(False, "-1", "用户校验失败", None)
+    #
+    # if token != task.token:
+    #     return pact_response_json_data(False, "-1", "任务-负责人不匹配", None)
 
     for subt in subtask:
         if subt["type"] == 1:
@@ -239,15 +246,13 @@ def getRate(taskId):
 # 知识加工跳转接口
 def subTask(taskId, token):
 
-    if not userTokenValidation(token):
+    flag, user = ssologin(token)
+    if not flag:
         return pact_response_json_data(False, "-2", "用户校验失败", None)
 
     task = db_select_task_by_id(taskId)
-    user = db_select_user_by_token(token)
-
     if not task:
         return pact_response_json_data(False, "-1", "未找到id对应任务", None)
-
     subtask_ids = json.loads(user.subtasks)
     print(subtask_ids)
     data = []

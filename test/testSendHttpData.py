@@ -160,14 +160,17 @@ def send_data_to_subTask_server():
 
 def send_data_to_searchUserId_server():
 
-    url = 'http://101.200.34.92:8081/api/searchUserId'
+    url = 'http://127.0.0.1:5000/api/entry/searchUserId'
     data = {}
     data['taskId'] = 987654
     data['userId'] = 4
+    #data["JWT"] = 'eyJhbGciOiJIUzUxMiIsImlhdCI6MTYyMDIxMzM2OSwiZXhwIjoxNjIwMjE2OTY5fQ.eyJ1c2VyX2lkIjoxfQ.noCfpLGn2EBHYt5W2dcKlUCKAGPTy7ZfycPreDfYyyjqf3gJHlDk3PNynsREMA_Y14UL2agdHexbp6yO7fg3lA'
 
-    resp = requests.post(url, json.dumps(data))
-    #print(resp.content)
-    resp = resp.json()
+    headers = {'Authorization' : 'JWT eyJhbGciOiJIUzUxMiIsImlhdCI6MTYyMDIxNDM4NSwiZXhwIjoxNjIwMjE3OTg1fQ.eyJ1c2VyX2lkIjoxfQ.LO9Nxj6YpFPVANaqZzgq03GOR5yerdmmkcvJ8Y3hX3ByB2IrG1aTJA-VgomGSHhJN6V2FOWnbt6FuUZrQdzsjQ'}
+    resp = requests.post(url, headers=headers, data=json.dumps(data))
+    print(resp.content)
+
+    #resp = resp.json()
     print(resp)
 
 def send_data_to_updateEditItem_server():
@@ -200,9 +203,9 @@ if __name__ == '__main__':
     #send_data_to_getRate_server()
     #send_data_to_subTask_server()
 
-    get_item_info_from_gengxin_server()
+    #get_item_info_from_gengxin_server()
 
     #send_data_to_taskSplit_server()
-    #send_data_to_searchUserId_server()
+    send_data_to_searchUserId_server()
 
     #send_data_to_updateEditItem_server()
