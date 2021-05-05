@@ -4,7 +4,7 @@ from werkzeug.exceptions import NotFound
 from apps.services.modelsCRUD import *
 from apps.libs.utils import *
 
-def startAssignTask(id, name, description, demand, reward, field, document, token):
+def startAssignTask(id, name, description, reward, field, document, token):
     if not userTokenValidation(token):
         return pact_response_json_data(False, "-1", "用户校验失败", None)
 
@@ -12,10 +12,10 @@ def startAssignTask(id, name, description, demand, reward, field, document, toke
     if result["status"] == "success":
         # 插入初始化词条
         initTaskItems(result)
-    timeDemand = demand['timeDemand']
-    subtaskDemand = demand['subtaskDemand']
-    teamDemand = demand['teamDemand']
-    db_add_task(id, name, description, timeDemand, subtaskDemand, teamDemand, reward, json.dumps(field, ensure_ascii=False), json.dumps(document, ensure_ascii=False), token)
+    # timeDemand = demand['timeDemand']
+    # subtaskDemand = demand['subtaskDemand']
+    # teamDemand = demand['teamDemand']
+    db_add_task(id, name, description, reward, json.dumps(field, ensure_ascii=False), json.dumps(document, ensure_ascii=False), token)
     return pact_response_json_data(True,"0","操作成功",None)
 
 # 这个接口插入数据默认值有待继续调整，不知道为何空串json不能解析出来
@@ -58,9 +58,8 @@ def initTaskItems(result):
         else:
             db_add_item(original_id=node["id"], name=node["name"],relation=json.dumps(d[node["name"]] if node["name"] in d.keys() else None, ensure_ascii=False) ,field=json.dumps(node["category"] if node["category"]!='' in d.keys() else "[]",ensure_ascii=False), info_box="[]", intro="", imageUrl="", content="",task_id=task_id, status=1,reference="[]")
 
-    #task.hasInitialize = 1
-    #db.session.commit()
     task.initialize()
+
 # 把发送过去的所有数据全部都接收并存在vue中，等任务负责人划分完任务后，把子任务信息和专题信息一并发送给课题组屋的resultNotice接口
 def jumpIntoAssignTask(id, token):
     # 跳转进入任务划分界面
@@ -119,15 +118,12 @@ def taskSplit(taskId, token, subtask):
     for subt in subtask:
         if subt["type"] == 1:
             db_add_batch_insert_subtask(name=subt["name"],content=subt["content"],money=subt["money"],type=subt["type"],task_id=taskId,itemCount=subt["itemCount"])
-            # for _ in range(subt["itemCount"]):
-            #     db_add_insert_subtask(name=subt["name"],content=subt["content"],money=subt["money"],type=subt["type"],task_id=taskId)
         if subt["type"] == 2:
             inited_item_ids = subt["inited_item_ids"]
             db_add_batch_supply_subtask(name=subt["name"],content=subt["content"],money=subt["money"],type=subt["type"],task_id=taskId, inited_item_ids=inited_item_ids)
         if subt["type"] == 3:
             for itemcount in subt["itemCount"]:
-                db_add_subtask(name=subt["name"],content=subt["content"],money=subt["money"],type=subt["type"],task_id=taskId,itemCount=itemcount)
-
+                db_add_subtask(name=subt["name"],content=subt["content"],money=subt["money"],type=subt["type"],task_id=taskId, itemCount=itemcount)
 
     return pact_response_json_data(True, "0", "成功", None)
 
@@ -140,7 +136,6 @@ def startTask(taskId, resultFileType, member):
         print(e)
         return pact_response_json_data(False, 404, "任务未找到", None)
 
-    #member = json.loads(member)
     for m in member:
         uid = m['userId']
         user = db_select_user_by_id(uid)
@@ -154,18 +149,6 @@ def startTask(taskId, resultFileType, member):
             errMsg += '当前用户角色与预定义角色不匹配'
             return pact_response_json_data(False, "-1", "操作失败 " +errMsg, None)
         user.add_subtask(m['subTaskId'])
-        # user.subtasks = json.dumps(m['subTaskId'])
-        # db_update_user(user)
-        # for subt_id in m['subTaskId']:
-        #     if user_role_subtask_type_validation(uid, subt_id):
-        #         #print(uid, subt_id,'通过校验')
-        #         #db_add_user_subtask_mapping(uid, subt_id)
-        #         subt = db_select_subtask_by_id(subt_id)
-        #         subt.add_user(uid)
-        #     else:
-        #         print('用户角色与子任务类型不匹配')
-        #         errMsg += '用户角色与子任务类型不匹配'
-        #         return pact_response_json_data(False, "-1", "操作失败 "+errMsg, None)
 
     # 更新任务信息
     task.resultFileType = resultFileType
@@ -176,8 +159,8 @@ def add_validator_item_mapping(user_id, item_id, result, content):
     db_add_validator_item_mapping(user_id, item_id, result, content)
     return pact_response_json_data(True, "0", "操作成功", None)
 
-# 这个任务改动接口，所有信息都可能改动吗？ 包括任务的子任务信息完全改动吗 以及 人员子任务对应变更改动吗
-def changeTask(taskId, taskName, description, resultFileType, member):
+# 这里变更的话，要取消子任务的之前人员，并且不需要用户名，需要和汪松反馈
+def changeTask(taskId, DetailsTaskId, userId, userName):
     errMsg = ""
     try:
         task = db_select_task_by_id(taskId)
@@ -186,25 +169,20 @@ def changeTask(taskId, taskName, description, resultFileType, member):
         return pact_response_json_data(False, 404, "任务未找到", None)
 
     # 更新任务信息
-    task.name = taskName
-    task.description = description
-    task.resultFileType = resultFileType
-    db_update_task(task)
+    user = db_select_user_by_id(userId)
+    subtask = db_select_subtask_by_id(DetailsTaskId)
+    if not user:
+        return pact_response_json_data(False, 404, "用户不存在", None)
+    if not subtask:
+        return pact_response_json_data(False, 404, "子任务不存在", None)
 
-    # for m in member:
-    #     uid = m['userId']
-    #     user = db_select_user_by_id(uid)
-    #     subt_id = m['subTaskId']
-    #     if user_role_subtask_type_validation(uid, subt_id):
-    #         subtask = db_select_subtask_by_id(subt_id)
-    #         subtask.name = m['subTaskName']
-    #         subtask.content = m['subTaskContent']
-    #         subtask.money = m['subTaskMoney']
-    #         db_update_subtask(subtask)
-    #         user.subtask.clear()
-    #         db_add_user_subtask_mapping(uid, subt_id)
-    #     else:
-    #
+    users = User.query.all()
+    for u in users:
+        if DetailsTaskId in json.loads(u.subtasks):
+            u.remove_subtask(DetailsTaskId)
+    user.add_subtask(DetailsTaskId)
+    return pact_response_json_data(True, "0", "操作成功", None)
+
 
 def getRate(taskId):
     task = db_select_task_by_id(taskId)
@@ -217,20 +195,16 @@ def getRate(taskId):
         subt_ids.append(subt.id)
         if subt.type!=3:
             total_subtask_count += 1
-        finished_item_count = 0.0
+
         validated_item_count = 0.0
-        done_flag = False
         if subt.type ==1 or subt.type == 2: # 新建任务 或 完善任务
             item = db_select_item_by_id(subt.item_id)
             if item.status == 5:
                 done_subtask_count += 1
                 validated_item_count += 1
                 finished_subt_ids.append(subt.id)
-        else: # 审核任务
-            pass
+
     print("finished_subt_ids",finished_subt_ids)
-    #rate = (done_subtask_count + validated_item_count) / (total_subtask_count * 2)
-    print(total_subtask_count)
     rate = (done_subtask_count ) / (total_subtask_count )
 
     users = User.query.all()
@@ -258,42 +232,6 @@ def getRate(taskId):
                 u_rate = user_validated_item_count / validator_subt.itemCount
                 status = 2 if u_rate == 1.0 else 1
                 user_finished_status.append({"userId": user.id, "userName": user.name, "role": user.role, "status": status, "rate": u_rate})
-    #     print(subt,subt.type,subt.itemCount, finished_item_count, validated_item_count)
-    #
-    #     if subt.type == 1 and finished_item_count == subt.itemCount:
-    #         print('该子任务下词条已全部编辑完毕')
-    #         done_flag = True
-    #         done_subtask_count += 1
-    #
-    #     if subt.type == 2 and finished_item_count == subt.itemCount:
-    #         print('该子任务下词条已全部编辑完毕')
-    #         done_flag = True
-    #         done_subtask_count += 1
-    #
-    #     if subt.type == 3 and validated_item_count == subt.itemCount:
-    #         print('该子任务下词条已全部审核完毕')
-    #         done_flag = True
-    #         done_subtask_count += 1
-    #
-    #     for user in subt.users:
-    #         d = {}
-    #         d['userId'] = user.id
-    #         d['userName'] = user.name
-    #         d['role'] = user.role
-    #         if user.role == 3:
-    #             d['rate'] = validated_item_count / subt.itemCount
-    #         else:
-    #             d['rate'] = finished_item_count / subt.itemCount
-    #
-    #         if done_flag:
-    #             d['status'] = 2
-    #             user_finished_status.append(d)
-    #         else:
-    #             d['status'] = 1
-    #             user_finished_status.append(d)
-    #
-    # print('子任务数', total_subtask_count,'完成子任务数' , done_subtask_count )
-    # rate = done_subtask_count / total_subtask_count
 
     return_dict = {"rate":rate, "member":user_finished_status}
     return pact_response_json_data(True,"0","操作成功",return_dict)
@@ -302,10 +240,7 @@ def getRate(taskId):
 def subTask(taskId, token):
 
     if not userTokenValidation(token):
-        return pact_response_json_data(False, "-1", "用户校验失败", None)
-
-    # if not token_type_validation(token):
-    #     return pact_response_json_data(False, "-1", "Token类型错误", None)
+        return pact_response_json_data(False, "-2", "用户校验失败", None)
 
     task = db_select_task_by_id(taskId)
     user = db_select_user_by_token(token)
@@ -317,21 +252,15 @@ def subTask(taskId, token):
     print(subtask_ids)
     data = []
     for subt_id in subtask_ids:
+        print(subt_id, taskId)
         subt = Subtask.query.filter_by(id=subt_id, task_id=taskId).first()
+        if not subt:
+            continue
         item_id = subt.item_id
         item = Item.query.get(item_id)
         if item:
             data.append(item.serialization())
     return pact_response_json_data(True, "0", "操作成功", data)
-
-    # for subt in task.subtasks:
-    #     #
-    #     if user in subt.users:
-    #         print('找到用户对应子任务')
-    #         return pact_response_json_data(True, "0", "操作成功", subt.serialization())
-    #
-    #
-    # return pact_response_json_data(False, "-3", "权限不足", None)
 
 # 测试python数据类型和json类型之间的对应关系
 def test_return_json():
@@ -345,13 +274,6 @@ def test_return_json():
     return json.dumps(response_data, ensure_ascii=False)
 
 def send_task_info_to_gengxin_server(id, description, documents):
-    # entry data server
-    #dataServer.initSubject.url = http://106.2.224.58:1019/occurance
-    #dataServer.submitted.url = http://106.2.224.58:1019/updatePage
-
-    # other server
-    #otherServer.checkToken.url = http://113.207.56.4:9527/user/check
-
     url = 'http://106.2.224.58:1019/occurance'
     data ={}
     data["subjectId"] = id
@@ -362,7 +284,7 @@ def send_task_info_to_gengxin_server(id, description, documents):
     data["documents"] = documents
     # ["狗（拉丁文Canis lupus familiaris）属于脊索动物门、脊椎动物亚门、哺乳纲、真兽亚纲、食肉目、裂脚亚目、犬科动物。中文亦称“犬”，狗分布于世界各地。狗与马、牛、羊、猪、鸡并称“六畜”。有科学家认为哈士奇狗是由早期人类从灰狼驯化而来，驯养时间在4万年前~1.5万年前。被称为“人类最忠实的朋友”，是饲养率最高的宠物，其寿命大约在12~18年 [1]  。在中国文化中，狗属于十二生肖之一，在十二生肖中的第11位","宠物（pet）指人们为了精神目的，而不是为了经济目的而豢养的生物。传统的宠物是指哺乳纲或鸟纲的动物，养着用于玩赏和作伴。实际生活中的宠物包括鱼纲、爬行纲、两栖纲、昆虫，甚至植物，用于观赏、作伴、舒缓人们的精神压力。 [1]"]
     resp = requests.post(url,json.dumps(data))
-    #print(resp.content)
+    print(resp.content)
     resp = resp.json()
     print(resp)
     if resp['status'] == "success":
@@ -379,7 +301,6 @@ def get_item_info_from_gengxin_server():
     # 接收数据地址 http://101.200.34.92:8081/api/entry/initSujectAssignment
     # other server
     #otherServer.checkToken.url = http://113.207.56.4:9527/user/check
-
     url = 'http://106.2.224.58:1019/occurance'
     data ={}
     data["subjectId"] = 1
@@ -400,8 +321,6 @@ def test_startAssignTask():
     demand["subtaskDemand"] = 10
     demand["teamDemand"] = "需要十个人"
     demand["timeDemand"] = datetime.now()
-    # demand["test_data"] = {"a":100.00,"b":None,"c":["d","e","f"]}
-    # data = json.dumps(demand,ensure_ascii=False)
 
     url = 'http://127.0.0.1:5000/api/startAssignTask'
     data = {}
@@ -429,8 +348,8 @@ if __name__ == '__main__':
 
     #get_item_info_from_gengxin_server()
     #subtask = [{"name":"新建词条","content":"新建五条词条","type":1,"money":500.00,"itemCount":5},{"name":"审核词条","content":"需要五个审核人员，审核词条,itemCount代表审核人员数量","type":3,"money":500.00,"userCount":5},{"name":"完善词条","content":"完善初始化词条","type":2,"money":100.00,"itemCount":5,"inited_item_ids":[17, 18]}]
-    #subtask = [{"name":"完善词条","content":"完善初始化词条","type":2,"money":100.00,"itemCount":5,"inited_item_ids":[17, 18]}]
+    subtask = [{"name":"完善词条","content":"完善初始化词条","type":2,"money":100.00,"itemCount":5,"inited_item_ids":[17, 18]}]
 
     #print(taskSplit(12345678, "19980308", subtask))
 
-    print(getRate(8888))
+    #print(getRate(8888))

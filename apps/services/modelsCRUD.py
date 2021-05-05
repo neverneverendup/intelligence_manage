@@ -7,13 +7,12 @@ def db_add_user(name, role, token):
     db.session.add(user)
     db.session.commit()
 
-def db_add_task(id, name, description, timeDemand, subtaskDemand, teamDemand, reward, field, document, token):
+def db_add_task(id, name, description, reward, field, document, token):
 
     if id != None:
-        print(timeDemand)
-        task = Task(id=id, name=name, description=description, timeDemand=timeDemand, subtaskDemand=subtaskDemand, teamDemand=teamDemand, reward=reward, field=field, document=document, token=token)
+        task = Task(id=id, name=name, description=description, reward=reward, field=field, document=document, token=token)
     else:
-        task = Task(name=name, description=description, timeDemand=timeDemand, subtaskDemand=subtaskDemand, teamDemand=teamDemand, reward=reward, field=field, document=document, token=token)
+        task = Task(name=name, description=description, reward=reward, field=field, document=document, token=token)
     db.session.add(task)
     db.session.commit()
 

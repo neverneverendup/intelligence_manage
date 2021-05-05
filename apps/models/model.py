@@ -9,22 +9,6 @@ app = Flask(__name__)
 app.config.from_object(config.Config)
 db = SQLAlchemy(app)
 
-# 用户、子任务映射表，多对多关系， 注意是大写Table不是小写！！！！！！！
-# user_subtask_mapping = db.Table('user_subtask_mapping',
-#                                      # db.Column('usid',db.Integer,primary_key=True, autoincrement=True),
-#                                      db.Column('user_id',db.Integer,db.ForeignKey('user.id')),
-#                                      db.Column('subtask_id',db.Integer, db.ForeignKey('subtask.id'))
-#                                      # ,db.Column('status',db.Integer,nullable=False,default=1)
-#                                      )
-
-# 词条、子任务映射表，多对多关系， 注意是大写Table不是小写！！！！！！！
-# item_subtask_mapping = db.Table('item_subtask_mapping',
-#                                      # db.Column('usid',db.Integer,primary_key=True, autoincrement=True),
-#                                      db.Column('item_id',db.Integer,db.ForeignKey('item.id')),
-#                                      db.Column('subtask_id',db.Integer, db.ForeignKey('subtask.id'))
-#                                      # ,db.Column('status',db.Integer,nullable=False,default=1)
-#                                      )
-
 class User(db.Model):
     __tablename__ = 'user'
     id = db.Column(db.Integer, autoincrement=True, primary_key=True)
@@ -32,12 +16,8 @@ class User(db.Model):
     # 用户角色1 2 3 对应负责人、普通成员和审核成员
     role = db.Column(db.Integer, nullable=False)
     token = db.Column(db.String(255),nullable=False,unique=True)
-
     subtasks = db.Column(db.String(255), default="[]")
 
-    #validateItemCount = db.Column(db.Integer, default=0)
-    # 一个用户可以完成多个子任务
-    #subtasks = db.relationship('Subtask', secondary=user_subtask_relationship, back_populates=db.backref('users'))
     def __repr__(self):
         return '<User %r %r %r %r>' % (self.id, self.name, self.role, self.token)
 
@@ -49,13 +29,21 @@ class User(db.Model):
             "token": self.token
         }
 
-    def add_subtask(self, subtask):
+    def add_subtask(self, subtaskId):
         if not self.subtasks:
-            self.subtasks = json.dumps(subtask)
+            self.subtasks = json.dumps(subtaskId)
         else:
             old = json.loads(self.subtasks)
-            old = old + subtask
+            old = old + [subtaskId]
             self.subtasks = json.dumps(old)
+        db.session.commit()
+
+    def remove_subtask(self, subtaskId):
+        old = json.loads(self.subtasks)
+        print(old)
+        old.remove(subtaskId)
+        print(old)
+        self.subtasks = json.dumps(old)
         db.session.commit()
 
 class Task(db.Model):
@@ -66,12 +54,10 @@ class Task(db.Model):
     # 需求存json串, 测试一下BLOB类型
     #demand = db.Column(db.BLOB,nullable=True)
     # 注意时间要求是截止时间
-    timeDemand = db.Column(db.DateTime)
-    createTime = db.Column(db.DateTime,default=datetime.datetime.now)
-    subtaskDemand = db.Column(db.Integer)
-    teamDemand = db.Column(db.String(255))
-
-
+    #timeDemand = db.Column(db.DateTime)
+    #createTime = db.Column(db.DateTime,default=datetime.datetime.now)
+    #subtaskDemand = db.Column(db.Integer)
+    #teamDemand = db.Column(db.String(255))
     reward = db.Column(db.DECIMAL(20,6),nullable=True)
     field = db.Column(db.String(255),nullable=True)
     # 文档可能要存Json
@@ -81,7 +67,6 @@ class Task(db.Model):
     # 一个任务对应多个子任务
     subtasks = db.relationship('Subtask', backref='task')
     items = db.relationship('Item', backref='task')
-
     # 是否初始化完毕，0代表未初始化，1代表已初始化
     hasInitialize = db.Column(db.Integer,default=0)
 
@@ -96,9 +81,9 @@ class Task(db.Model):
             "name":self.name,
             "description":self.description,
             #"demand":json.loads(self.demand),
-            "timeDemand": self.timeDemand,
-            "subtaskDemand": self.subtaskDemand,
-            "teamDemand": self.teamDemand,
+            # "timeDemand": self.timeDemand,
+            # "subtaskDemand": self.subtaskDemand,
+            # "teamDemand": self.teamDemand,
             "reward":str(self.reward),
             "field":self.field,
             "document":self.document,
@@ -137,14 +122,6 @@ class Subtask(db.Model):
     task_id = db.Column(db.Integer, db.ForeignKey('task.id'))
     # 外键
     item_id = db.Column(db.Integer)
-    #user_id = db.Column(db.String(255))
-    # 是否已完成
-    # status = db.Column(db.Integer, default=0)
-
-    # 一个子任务包含多个词条
-    #items = db.relationship('Item', secondary=item_subtask_mapping, backref='subtask',lazy='dynamic')
-    # 一个子任务可以由多个人完成, 多对多关系
-    #users = db.relationship('User', secondary=user_subtask_mapping, backref='subtask',lazy='dynamic')
 
     def __repr__(self):
         return '<Subtask %r %r %r %r>' % (self.id, self.name, self.content, self.task_id)
@@ -186,8 +163,6 @@ class Item(db.Model):
     reference = db.Column(db.TEXT, default="[]")
     task_id = db.Column(db.Integer, db.ForeignKey('task.id'))
     has_selected_supply = db.Column(db.Integer, default=0)
-    # 外键
-    #subtask_id = db.Column(db.Integer,db.ForeignKey('subtask.id'))
 
     def __repr__(self):
         return '<Item %r %r %r %r>' % (self.id, self.name, self.status, self.task_id)
@@ -216,7 +191,6 @@ class Validator_Item_Mapping(db.Model):
     item_id = db.Column(db.Integer)
     user_id = db.Column(db.Integer)
     task_id = db.Column(db.Integer)
-
     # 审核结果 ，0驳回，1通过，
     result = db.Column(db.Integer,nullable=True)
     # 审核意见

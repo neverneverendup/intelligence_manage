@@ -66,8 +66,8 @@ def updateCheckItem(item_id, checkResult, user_id, content):
         item.status = 4
     else:
         item.status = 5
-    db_update_item(item)
 
+    db_update_item(item)
     db_add_validator_item_mapping(item_id=item_id, user_id=user_id, result=checkResult, content=content)
 
     return pact_response_json_data(True,"0","操作成功",None)

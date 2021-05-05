@@ -1,8 +1,7 @@
 from flask import request, jsonify, Blueprint
 import json
-#from apps.models.models import apps
 from apps.services import outServices, inServices
-api = Blueprint('api', __name__, url_prefix='/api')
+api = Blueprint('api', __name__, url_prefix='/api/entry')
 
 @api.route('/startAssignTask', methods=['GET', 'POST'])
 def api_startAssignTask():
@@ -10,7 +9,7 @@ def api_startAssignTask():
         data = request.get_data()
         data = json.loads(data)
         print(data)
-        return outServices.startAssignTask(data['id'], data['name'], data['description'], data['demand'], data['reward'], data['field'], data['document'], data['token'])
+        return outServices.startAssignTask(data['taskId'], data['taskName'], data['description'], data['reward'], data['field'], data['document'], data['token'])
     return 'you see this /startAssignTask in get!'
 
 @api.route('/assignTask', methods=['GET', 'POST'])
@@ -19,7 +18,7 @@ def jumpIntoAssignTask():
         data = request.get_data()
         data = json.loads(data)
         print(data)
-        return outServices.jumpIntoAssignTask(data['id'], data['token'])
+        return outServices.jumpIntoAssignTask(data['taskId'], data['token'])
     return 'you see this /jumpIntoAssignTask in get!'
 
 @api.route('/resultNotice', methods=['POST'])
@@ -70,6 +69,14 @@ def taskSplit():
         data = json.loads(data)
         print(data)
         return outServices.taskSplit(data["task_id"], data["token"], data["subtask"])
+
+@api.route('/changeTask', methods=['POST'])
+def changeTask():
+    if request.method == 'POST':
+        data = request.get_data()
+        data = json.loads(data)
+        print(data)
+        return outServices.changeTask(data["taskId"], data["DetailsTaskId"], data["userID"], data["userName"])
 
 @api.route('/searchUserId', methods=['POST'])
 def searchUserId():
