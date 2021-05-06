@@ -50,7 +50,7 @@ class User(db.Model):
         db.session.commit()
 
     def create_token(self):
-        s = Serializer(config.Config.SECRET_KEY, )
+        s = Serializer(config.Config.SECRET_KEY)
         # 接收用户id转换与编码
         token = s.dumps({"user_id": self.id}).decode('ascii')
         return token

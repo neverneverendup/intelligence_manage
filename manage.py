@@ -2,7 +2,6 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate, MigrateCommand  # 导入
 from flask_script import Manager  # 导入
-
 from apps.models.model import *
 
 Migrate(app ,db)

@@ -3,6 +3,7 @@ import json
 from apps.auth.auth import auth
 from apps.services import outServices, inServices
 api = Blueprint('api', __name__, url_prefix='/api/entry')
+inside_api = Blueprint('inside_api', __name__, url_prefix='/inside_api/entry')
 
 @api.route('/startAssignTask', methods=['GET', 'POST'])
 def api_startAssignTask():
@@ -79,7 +80,7 @@ def changeTask():
         print(data)
         return outServices.changeTask(data["taskId"], data["DetailsTaskId"], data["userID"], data["userName"])
 
-@api.route('/searchUserId', methods=['GET','POST'])
+@inside_api.route('/searchUserId', methods=['GET','POST'])
 @auth.login_required
 def searchUserId():
     if request.method == 'POST':
@@ -89,7 +90,7 @@ def searchUserId():
         print(data)
         return inServices.searchUserId(data["userId"], data["taskId"])
 
-@api.route('/updateEditItem', methods=['POST'])
+@inside_api.route('/updateEditItem', methods=['POST'])
 @auth.login_required
 def updateEditItem():
     if request.method == 'POST':
@@ -98,7 +99,7 @@ def updateEditItem():
         print(data)
         return inServices.updateEditItem(data["item_id"], data["original_id"], data["name"],data["relation"] ,data["field"], data["info_box"],data["intro"], data["imageUrl"], data["content"],data["task_id"],data["reference"])
 
-@api.route('/getCheckItem', methods=['POST'])
+@inside_api.route('/getCheckItem', methods=['POST'])
 @auth.login_required
 def getCheckItem():
     if request.method == 'POST':
@@ -107,7 +108,7 @@ def getCheckItem():
         print(data)
         return inServices.getCheckItem(data["task_id"])
 
-@api.route('/updateCheckItem', methods=['POST'])
+@inside_api.route('/updateCheckItem', methods=['POST'])
 @auth.login_required
 def updateCheckItem():
     if request.method == 'POST':
@@ -115,6 +116,14 @@ def updateCheckItem():
         data = json.loads(data)
         print(data)
         return inServices.updateCheckItem(data["item_id"], data["checkResult"], data["user_id"],data["content"])
+
+@inside_api.route('/userLogin', methods=['POST'])
+def userLogin():
+    if request.method == 'POST':
+        data = request.get_data()
+        data = json.loads(data)
+        print(data)
+        return inServices.userLogin(data["token"])
 
 if __name__ == '__main__':
     #apps.run(debug=True)

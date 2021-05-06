@@ -5,6 +5,7 @@ from apps.libs.utils import *
 def ssologin(token):
     resp = outside_token_validation(token)
     print(resp)
+    print(resp)
     if resp["success"] == False:
         return False, None
     user = check_and_add_user(resp=resp, token=token)

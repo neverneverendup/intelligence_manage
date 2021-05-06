@@ -160,22 +160,24 @@ def send_data_to_subTask_server():
 
 def send_data_to_searchUserId_server():
 
-    url = 'http://127.0.0.1:5000/api/entry/searchUserId'
+    url = 'http://127.0.0.1:5000/inside_api/entry/searchUserId'
     data = {}
-    data['taskId'] = 987654
+    data['taskId'] = 888
     data['userId'] = 4
     #data["JWT"] = 'eyJhbGciOiJIUzUxMiIsImlhdCI6MTYyMDIxMzM2OSwiZXhwIjoxNjIwMjE2OTY5fQ.eyJ1c2VyX2lkIjoxfQ.noCfpLGn2EBHYt5W2dcKlUCKAGPTy7ZfycPreDfYyyjqf3gJHlDk3PNynsREMA_Y14UL2agdHexbp6yO7fg3lA'
-
-    headers = {'Authorization' : 'JWT eyJhbGciOiJIUzUxMiIsImlhdCI6MTYyMDIxNDM4NSwiZXhwIjoxNjIwMjE3OTg1fQ.eyJ1c2VyX2lkIjoxfQ.LO9Nxj6YpFPVANaqZzgq03GOR5yerdmmkcvJ8Y3hX3ByB2IrG1aTJA-VgomGSHhJN6V2FOWnbt6FuUZrQdzsjQ'}
+    test_user = User.query.get(3)
+    inside_token = test_user.create_token()
+    print(inside_token)
+    headers = {'Authorization' : 'JWT '+ inside_token}
     resp = requests.post(url, headers=headers, data=json.dumps(data))
     print(resp.content)
 
-    #resp = resp.json()
+    resp = resp.json()
     print(resp)
 
 def send_data_to_updateEditItem_server():
 
-    url = 'http://101.200.34.92:8081/api/updateEditItem'
+    url = 'http://101.200.34.92:8081/api/inside/updateEditItem'
     data = {}
     data["item_id"] = 94
     data["original_id"] = 123
@@ -194,6 +196,14 @@ def send_data_to_updateEditItem_server():
     resp = resp.json()
     print(resp)
 
+def send_data_to_userLogin_server():
+    url = 'http://127.0.0.1:5000/inside_api/entry/userLogin'
+    data = {}
+    data['token'] = '1231212312'
+    resp = requests.post(url, data=json.dumps(data))
+    resp = resp.json()
+    print(resp)
+
 if __name__ == '__main__':
     #send_data_to_http_server()
     #send_data_to_startAssignTask_server()
@@ -206,6 +216,8 @@ if __name__ == '__main__':
     #get_item_info_from_gengxin_server()
 
     #send_data_to_taskSplit_server()
-    send_data_to_searchUserId_server()
+    #send_data_to_searchUserId_server()
 
     #send_data_to_updateEditItem_server()
+
+    send_data_to_userLogin_server()
