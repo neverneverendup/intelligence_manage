@@ -21,8 +21,8 @@ def db_add_task(id, name, description, reward, field, document, user_id):
     db.session.add(task)
     db.session.commit()
 
-def db_add_item(name, original_id, relation, field, info_box, intro, imageUrl, content, task_id, status, reference):
-    item = Item(name=name, original_id=original_id,status=status, relation=relation, field=field, info_box=info_box, intro=intro, imageUrl=imageUrl, content=content, task_id=task_id ,reference=reference)
+def db_add_item(name, original_id, relation, field, info_box, intro, imageUrl, content, task_id, status, reference,isInitialize):
+    item = Item(name=name, original_id=original_id,status=status, relation=relation, field=field, info_box=info_box, intro=intro, imageUrl=imageUrl, content=content, task_id=task_id ,reference=reference,isInitialize=isInitialize)
     db.session.add(item)
     db.session.commit()
 
@@ -115,6 +115,11 @@ def db_update_subtask(subtask):
 def db_update_item(item):
     db.session.add(item)
     db.session.commit()
+
+def db_update_vim(vim):
+    db.session.add(vim)
+    db.session.commit()
+
 
 def db_select_user_by_id(id):
     #user = User.query.filter(User.id==id).first()

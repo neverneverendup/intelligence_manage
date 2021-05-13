@@ -21,7 +21,7 @@ class User(db.Model):
     subtasks = db.Column(db.String(255), default="[]")
 
     def __repr__(self):
-        return '<User %r %r %r %r>' % (self.id, self.name, self.role, self.token)
+        return '<User %r %r %r>' % (self.id, self.name, self.role)
 
     def serialization(self):
         return {
@@ -66,13 +66,6 @@ class Task(db.Model):
     id = db.Column(db.Integer, autoincrement=True, primary_key=True)
     name = db.Column(db.String(255),nullable=False)
     description = db.Column(db.TEXT)
-    # 需求存json串, 测试一下BLOB类型
-    #demand = db.Column(db.BLOB,nullable=True)
-    # 注意时间要求是截止时间
-    #timeDemand = db.Column(db.DateTime)
-    #createTime = db.Column(db.DateTime,default=datetime.datetime.now)
-    #subtaskDemand = db.Column(db.Integer)
-    #teamDemand = db.Column(db.String(255))
     reward = db.Column(db.DECIMAL(20,6),nullable=True)
     field = db.Column(db.String(255),nullable=True)
     # 文档可能要存Json
@@ -86,33 +79,27 @@ class Task(db.Model):
     hasInitialize = db.Column(db.Integer,default=0)
 
     def __repr__(self):
-        return '<Task %r %r %r %r>' % (self.id, self.name, self.description, self.token)
+        return '<Task %r %r %r>' % (self.id, self.name, self.description)
 
     def serialization(self):
         #print(type(self.reward))
         return {
             "task_id":self.id,
-            "head_id":self.get_header_id(),
             "name":self.name,
             "description":self.description,
-            #"demand":json.loads(self.demand),
-            # "timeDemand": self.timeDemand,
-            # "subtaskDemand": self.subtaskDemand,
-            # "teamDemand": self.teamDemand,
             "reward":str(self.reward),
             "field":self.field,
             "document":self.document,
-            "token":self.token,
             "resultFileType":self.resultFileType,
             "hasInitialize":self.hasInitialize
         }
 
-    def get_header_id(self):
-        header = User.query.filter(User.token==self.token).first()
-        if header:
-            return header.id
-        else:
-            return None
+    # def get_header_id(self):
+    #     header = User.query.filter(User.token==self.token).first()
+    #     if header:
+    #         return header.id
+    #     else:
+    #         return None
 
     def initialize(self):
         self.hasInitialize = 1

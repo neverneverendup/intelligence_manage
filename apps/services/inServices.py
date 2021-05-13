@@ -7,7 +7,8 @@ def userLogin(outside_token):
     # flag, user = ssologin(outside_token)
     # if not flag:
     #     return pact_response_json_data(False, "-1", "外部token校验失败", None)
-    user = User.query.get(1)
+    user = User.query.get(int(outside_token))
+    print(user)
     if user:
         inside_token = user.create_token()
         user.inside_token = inside_token
@@ -17,7 +18,41 @@ def userLogin(outside_token):
         data["inside_token"] = inside_token
         data["outside_token"] = outside_token
         data["user_id"] = user.id
+        data["role"] = user.role
         return pact_response_json_data(True,"0","操作成功", data)
+    else:
+        print('用户不存在，校验失败')
+        return pact_response_json_data(False,"-2","用户校验失败", None)
+
+
+# 提交任务划分结果，这里要做的事情包括三类子任务，新建任务、完善任务和审核任务。
+# 新建任务需要提交完整的子任务信息，审核任务需要提交审核人员数量，完善任务需要提交已初始化词条id。
+# 最新改动，取消输入token参数
+def taskSplit(taskId, subtask):
+    # 接收子任务详情情况，将数据插入数据库
+    try:
+        task = db_select_task_by_id(taskId)
+    except NotFound as e:
+        print(e)
+        return pact_response_json_data(False, "-1", "任务未找到", None)
+
+    # if not userTokenValidation(token):
+    #     return pact_response_json_data(False, "-1", "用户校验失败", None)
+    #
+    # if token != task.token:
+    #     return pact_response_json_data(False, "-1", "任务-负责人不匹配", None)
+
+    for subt in subtask:
+        if subt["type"] == 1:
+            db_add_batch_insert_subtask(name=subt["name"],content=subt["content"],money=subt["money"],type=subt["type"],task_id=taskId,itemCount=subt["itemCount"])
+        if subt["type"] == 2:
+            inited_item_ids = subt["itemTable"]
+            db_add_batch_supply_subtask(name=subt["name"],content=subt["content"],money=subt["money"],type=subt["type"],task_id=taskId, inited_item_ids=inited_item_ids)
+        if subt["type"] == 3:
+            for itemcount in subt["itemTable"]:
+                db_add_subtask(name=subt["name"],content=subt["content"],money=subt["money"],type=subt["type"],task_id=taskId, itemCount=itemcount)
+
+    return pact_response_json_data(True, "0", "成功", None)
 
 def searchUserId(userId, taskId):
     user = db_select_user_by_id(userId)
@@ -42,7 +77,7 @@ def searchUserId(userId, taskId):
             data.append(item.serialization())
     return pact_response_json_data(True,"0","操作成功",data)
 
-def updateEditItem(item_id, original_id, name,relation ,field, info_box,intro, imageUrl, content,task_id,reference):
+def updateEditItem(item_id, original_id, name,relation ,field, info_box,intro, imageUrl, content,task_id,reference, operation):
     item = db_select_item_by_id(item_id)
     item.original_id = original_id
     item.name=name
@@ -53,8 +88,12 @@ def updateEditItem(item_id, original_id, name,relation ,field, info_box,intro, i
     item.imageUrl = imageUrl
     item.content = content
     item.task_id = task_id
-    item.status = 3
     item.reference = json.dumps(reference, ensure_ascii=False)
+    # 0代表保存, 1代表提交审核
+    if operation == 0:
+        pass
+    elif operation == 1:
+        item.status = 3
     db_update_item(item)
     return pact_response_json_data(True,"0","操作成功",None)
 
@@ -90,7 +129,13 @@ def updateCheckItem(item_id, checkResult, user_id, content):
         item.status = 5
 
     db_update_item(item)
-    db_add_validator_item_mapping(item_id=item_id, user_id=user_id, result=checkResult, content=content)
+    vim = Validator_Item_Mapping.query.filter_by(item_id=item_id, user_id=user_id).first()
+    if vim:
+        vim.result = checkResult
+        vim.content = content
+        db_update_vim(vim)
+    else:
+        db_add_validator_item_mapping(item_id=item_id, user_id=user_id, result=checkResult, content=content)
 
     return pact_response_json_data(True,"0","操作成功",None)
 
@@ -99,7 +144,7 @@ if __name__ == '__main__':
     # data = json.dumps(txt)
     # print(json.loads(data))
     # print('11111111111111111111111111111111111')
-    print(searchUserId(3, 987654))
+    #print(searchUserId(3, 987654))
     # print(getCheckItem(8888))
     # print(updateEditItem(42,1000,"无名词条","","","","","未知地址","内容",8888))
     # print(updateCheckItem(43, 1))
@@ -113,3 +158,5 @@ if __name__ == '__main__':
     # item.relation = json.dumps(None)
     # db_update_item(item)
     # print(item.serialization())
+
+    userLogin(1)

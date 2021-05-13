@@ -3,12 +3,12 @@ from werkzeug.exceptions import NotFound
 from apps.libs.utils import *
 
 def ssologin(token):
-    resp = outside_token_validation(token)
-    print(resp)
-    print(resp)
-    if resp["success"] == False:
-        return False, None
-    user = check_and_add_user(resp=resp, token=token)
+    # resp = outside_token_validation(token)
+    # print(resp)
+    # if resp["success"] == False:
+    #     return False, None
+    # user = check_and_add_user(resp=resp, token=token)
+    user = User.query.get(int(token))
     return True, user
 
 def startAssignTask(id, name, description, reward, field, document, token):
@@ -60,14 +60,14 @@ def initTaskItems(result):
             node["category"] = "[]"
 
         if info:
-            db_add_item(original_id=node["id"], name=node["name"],relation=json.dumps(d[node["name"]] if node["name"] in d.keys() else None, ensure_ascii=False) ,field=json.dumps(node["category"],ensure_ascii=False), info_box=json.dumps(node["info"]["infoBox"],ensure_ascii=False), intro=node["info"]["intro"], imageUrl=node["info"]["imageUrl"], content=node["info"]["content"], task_id=task_id, status=1,reference="[]")
+            db_add_item(original_id=node["id"], name=node["name"],relation=json.dumps(d[node["name"]] if node["name"] in d.keys() else None, ensure_ascii=False) ,field=json.dumps(node["category"],ensure_ascii=False), info_box=json.dumps(node["info"]["infoBox"],ensure_ascii=False), intro=node["info"]["intro"], imageUrl=node["info"]["imageUrl"], content=node["info"]["content"], task_id=task_id, status=1,reference="[]",isInitialize=1)
         else:
-            db_add_item(original_id=node["id"], name=node["name"],relation=json.dumps(d[node["name"]] if node["name"] in d.keys() else None, ensure_ascii=False) ,field=json.dumps(node["category"] if node["category"]!='' in d.keys() else "[]",ensure_ascii=False), info_box="[]", intro="", imageUrl="", content="",task_id=task_id, status=1,reference="[]")
+            db_add_item(original_id=node["id"], name=node["name"],relation=json.dumps(d[node["name"]] if node["name"] in d.keys() else None, ensure_ascii=False) ,field=json.dumps(node["category"] if node["category"]!='' in d.keys() else "[]",ensure_ascii=False), info_box="[]", intro="", imageUrl="", content="",task_id=task_id, status=1,reference="[]",isInitialize=1)
 
     task.initialize()
 
 # 把发送过去的所有数据全部都接收并存在vue中，等任务负责人划分完任务后，把子任务信息和专题信息一并发送给课题组屋的resultNotice接口
-def jumpIntoAssignTask(id, token):
+def jumpIntoAssignTask(id):
     # 跳转进入任务划分界面
     try:
         task = db_select_task_by_id(id)
@@ -75,25 +75,22 @@ def jumpIntoAssignTask(id, token):
         print(e)
         return pact_response_json_data(False, "-1", "任务未找到", None)
 
-    flag, user = ssologin(token)
-    if not flag:
-        return pact_response_json_data(False, "-1", "用户校验失败", None)
+    # flag, user = ssologin(token)
+    # if not flag:
+    #     return pact_response_json_data(False, "-1", "用户校验失败", None)
 
-    # 校验任务负责人token是否匹配
-    if user.id == task.user_id:
-        print(task.hasInitialize)
-        if task.hasInitialize == 0 :
-            print('未通过')
-            return pact_response_json_data(False, "-1", "稍作等待，任务未初始化完毕", None)
-        print('已通过')
-        task_data = task.serialization()
-        items_data = task.get_items()
-        data = {}
-        data['task'] = task_data
-        data['items'] = items_data
-        return pact_response_json_data(True, "0", "成功", data)
-    else:
-        return pact_response_json_data(False, "-1", "任务-负责人不匹配", None)
+    print(task.hasInitialize)
+    if task.hasInitialize == 0 :
+        print('未通过')
+        return pact_response_json_data(False, "-1", "稍作等待，任务未初始化完毕", None)
+    print('已通过')
+    task_data = task.serialization()
+    items_data = task.get_items()
+    data = {}
+    data['task'] = task_data
+    data['items'] = items_data
+    return pact_response_json_data(True, "0", "成功", data)
+
 
 def resultNotice(post_data):
     url = 'http:// 113.207.56.4:9527/process/task/resultNotice'
@@ -105,35 +102,6 @@ def resultNotice(post_data):
         print("任务划分结果数据发送成功！")
         print(resp['data'])
     return resp
-
-# 提交任务划分结果，这里要做的事情包括三类子任务，新建任务、完善任务和审核任务。
-# 新建任务需要提交完整的子任务信息，审核任务需要提交审核人员数量，完善任务需要提交已初始化词条id。
-# 最新改动，取消输入token参数
-def taskSplit(taskId, subtask):
-    # 接收子任务详情情况，将数据插入数据库
-    try:
-        task = db_select_task_by_id(taskId)
-    except NotFound as e:
-        print(e)
-        return pact_response_json_data(False, "-1", "任务未找到", None)
-
-    # if not userTokenValidation(token):
-    #     return pact_response_json_data(False, "-1", "用户校验失败", None)
-    #
-    # if token != task.token:
-    #     return pact_response_json_data(False, "-1", "任务-负责人不匹配", None)
-
-    for subt in subtask:
-        if subt["type"] == 1:
-            db_add_batch_insert_subtask(name=subt["name"],content=subt["content"],money=subt["money"],type=subt["type"],task_id=taskId,itemCount=subt["itemCount"])
-        if subt["type"] == 2:
-            inited_item_ids = subt["inited_item_ids"]
-            db_add_batch_supply_subtask(name=subt["name"],content=subt["content"],money=subt["money"],type=subt["type"],task_id=taskId, inited_item_ids=inited_item_ids)
-        if subt["type"] == 3:
-            for itemcount in subt["itemCount"]:
-                db_add_subtask(name=subt["name"],content=subt["content"],money=subt["money"],type=subt["type"],task_id=taskId, itemCount=itemcount)
-
-    return pact_response_json_data(True, "0", "成功", None)
 
 # 现在的resultFileType还都是字符串类型
 def startTask(taskId, resultFileType, member):
@@ -191,7 +159,6 @@ def changeTask(taskId, DetailsTaskId, userId, userName):
     user.add_subtask(DetailsTaskId)
     return pact_response_json_data(True, "0", "操作成功", None)
 
-
 def getRate(taskId):
     task = db_select_task_by_id(taskId)
     total_subtask_count = 0.0
@@ -205,8 +172,11 @@ def getRate(taskId):
             total_subtask_count += 1
 
         validated_item_count = 0.0
+        #print('目前处理subtid',subt.id)
         if subt.type ==1 or subt.type == 2: # 新建任务 或 完善任务
             item = db_select_item_by_id(subt.item_id)
+            if not item:
+                continue
             if item.status == 5:
                 done_subtask_count += 1
                 validated_item_count += 1

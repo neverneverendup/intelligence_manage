@@ -14,15 +14,6 @@ def api_startAssignTask():
         return outServices.startAssignTask(data['taskId'], data['taskName'], data['description'], data['reward'], data['field'], data['document'], data['token'])
     return 'you see this /startAssignTask in get!'
 
-@api.route('/assignTask', methods=['GET', 'POST'])
-def jumpIntoAssignTask():
-    if request.method == 'POST':
-        data = request.get_data()
-        data = json.loads(data)
-        print(data)
-        return outServices.jumpIntoAssignTask(data['taskId'], data['token'])
-    return 'you see this /jumpIntoAssignTask in get!'
-
 @api.route('/resultNotice', methods=['POST'])
 def resultNotice():
     if request.method == 'POST':
@@ -64,14 +55,6 @@ def initSubjectAssignment():
         print(data)
         return outServices.pact_response_json_data(True, "0", "", None)
 
-@api.route('/taskSplit', methods=['POST'])
-def taskSplit():
-    if request.method == 'POST':
-        data = request.get_data()
-        data = json.loads(data)
-        print(data)
-        return outServices.taskSplit(data["task_id"], data["token"], data["subtask"])
-
 @api.route('/changeTask', methods=['POST'])
 def changeTask():
     if request.method == 'POST':
@@ -79,6 +62,25 @@ def changeTask():
         data = json.loads(data)
         print(data)
         return outServices.changeTask(data["taskId"], data["DetailsTaskId"], data["userID"], data["userName"])
+
+@inside_api.route('/assignTask', methods=['GET', 'POST'])
+@auth.login_required()
+def jumpIntoAssignTask():
+    if request.method == 'POST':
+        data = request.get_data()
+        data = json.loads(data)
+        print(data)
+        return outServices.jumpIntoAssignTask(data['taskId'])
+    return 'you see this /jumpIntoAssignTask in get!'
+
+@inside_api.route('/taskSplit', methods=['POST'])
+@auth.login_required
+def taskSplit():
+    if request.method == 'POST':
+        data = request.get_data()
+        data = json.loads(data)
+        print(data)
+        return inServices.taskSplit(data["task_id"], data["subtask"])
 
 @inside_api.route('/searchUserId', methods=['GET','POST'])
 @auth.login_required
@@ -88,7 +90,7 @@ def searchUserId():
         data = json.loads(data)
         #inServices.searchUserId(data["userId"], data["taskId"])
         print(data)
-        return inServices.searchUserId(data["userId"], data["taskId"])
+        return inServices.searchUserId(data["user_id"], data["task_id"])
 
 @inside_api.route('/updateEditItem', methods=['POST'])
 @auth.login_required
@@ -97,7 +99,7 @@ def updateEditItem():
         data = request.get_data()
         data = json.loads(data)
         print(data)
-        return inServices.updateEditItem(data["item_id"], data["original_id"], data["name"],data["relation"] ,data["field"], data["info_box"],data["intro"], data["imageUrl"], data["content"],data["task_id"],data["reference"])
+        return inServices.updateEditItem(data["item_id"], data["original_id"], data["name"],data["relation"] ,data["field"], data["info_box"],data["intro"], data["imageUrl"], data["content"],data["task_id"],data["reference"],data["operation"])
 
 @inside_api.route('/getCheckItem', methods=['POST'])
 @auth.login_required
@@ -117,7 +119,7 @@ def updateCheckItem():
         print(data)
         return inServices.updateCheckItem(data["item_id"], data["checkResult"], data["user_id"],data["content"])
 
-@inside_api.route('/userLogin', methods=['POST'])
+@inside_api.route('/userLogin', methods=['GET','POST'])
 def userLogin():
     if request.method == 'POST':
         data = request.get_data()

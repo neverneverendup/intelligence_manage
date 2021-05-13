@@ -19,106 +19,6 @@ def userTokenValidation(token):
         return False
     return True
 
-def token_type_validation(token):
-    print(type(token))
-    if type(token)==str:
-        return True
-    else:
-        return False
-
-def startAssignTask(id, name, description, demand, reward, field, document, token):
-
-    if not userTokenValidation(token):
-        return pact_response_json_data(False, "-1", "用户校验失败", None)
-
-    try:
-        db_add_task(id, name, description, demand, reward, field, document, token)
-        return pact_response_json_data(True,"0","操作成功",None)
-    except Exception as e:
-        print("操作失败"+str(e))
-        return pact_response_json_data(False,"-1","操作失败,"+str(e),None)
-
-def user_role_subtask_type_validation(user_id, subtask_id):
-    subtask = db_select_subtask_by_id(subtask_id)
-    user = db_select_user_by_id(user_id)
-    #if user.role!=1:
-    if subtask.type==1 and user.role==2:
-        print("校验",user.role, subtask.type)
-        user.subtask.append(subtask)
-        db.session.add(subtask)
-        db.session.add(user)
-        db.session.commit()
-        return True
-    elif subtask.type == 2 and user.role == 2:
-        print("校验", user.role, subtask.type)
-        user.subtask.append(subtask)
-        db.session.add(subtask)
-        db.session.add(user)
-        db.session.commit()
-        return True
-    elif subtask.type==3 and user.role==3:
-        user.subtask.append(subtask)
-        db.session.add(subtask)
-        db.session.add(user)
-        db.session.commit()
-        return True
-    else:
-        print('角色权限与子任务不匹配')
-        return False
-
-def jumpIntoAssignTask(id, token):
-    # 跳转进入任务划分界面
-    try:
-        task = db_select_task_by_id(id)
-    except NotFound as e:
-        print(e)
-        return pact_response_json_data(False, "-1", "任务未找到", None)
-
-    if not userTokenValidation(token):
-        return pact_response_json_data(False, "-1", "用户校验失败", None)
-
-    # 校验任务负责人token是否匹配
-    if token == task.token:
-        data = task.serialization()
-        return pact_response_json_data(True, "0", "成功", data)
-    else:
-        return pact_response_json_data(False, "-1", "任务-负责人不匹配", None)
-
-# 现在的resultFileType还都是字符串类型
-def startTask(taskId, resultFileType, member):
-    errMsg = ""
-    try:
-        task = db_select_task_by_id(taskId)
-    except NotFound as e:
-        print(e)
-        return pact_response_json_data(False, 404, "任务未找到", None)
-
-    #member = json.loads(member)
-    for m in member:
-        uid = m['userId']
-        user = db_select_user_by_id(uid)
-        if not user:
-            print('当前角色用户预定义角色不匹配')
-            errMsg += '当前用户不存在'
-            return pact_response_json_data(False, "-1", "操作失败 " + errMsg, None)
-        role = m['role']
-        if role != user.role:
-            print('当前用户角色与预定义角色不匹配')
-            errMsg += '当前用户角色与预定义角色不匹配'
-            return pact_response_json_data(False, "-1", "操作失败 " +errMsg, None)
-        for subt_id in m['subTaskId']:
-            if user_role_subtask_type_validation(uid, subt_id):
-                #print(uid, subt_id,'通过校验')
-                db_add_user_subtask_mapping(uid, subt_id)
-            else:
-                print('用户角色与子任务类型不匹配')
-                errMsg += '用户角色与子任务类型不匹配'
-                return pact_response_json_data(False, "-1", "操作失败 "+errMsg, None)
-
-    # 更新任务信息
-    task.resultFileType = resultFileType
-    db_update_task(task)
-    return pact_response_json_data(True, "0", "操作成功", None)
 
 # 这个任务改动接口，所有信息都可能改动吗？ 包括任务的子任务信息完全改动吗 以及 人员子任务对应变更改动吗
 def changeTask(taskId, taskName, description, resultFileType, member):
@@ -283,23 +183,16 @@ def send_data_to_http_server():
     # 问问学长 接口要传的数据的含义，以及为什么status一直是数据正
 
 def send_data_to_startAssignTask_server():
-    demand = {}
-    demand["subtaskDemand"] = 100
-    demand["teamDemand"] = "需要十个人"
-    demand["timeDemand"] = "2021-01-01"
-    demand["test_data"] = {"a":100.00,"b":None,"c":["d","e","f"]}
-    # data = json.dumps(demand,ensure_ascii=False)
-
     url = 'http://127.0.0.1:5000/api/startAssignTask'
+    url = 'http://101.200.34.92:8081/api/entry/startAssignTask'
     data = {}
-    data['id'] = 12345678
-    data['name'] = '众智化专题'
-    data['description'] = '众智化专题项目测试'
-    data['demand'] = demand
+    data['taskId'] = 8
+    data['taskName'] = '众智化专题6'
+    data['description'] = '众智化专题项目测试6'
     data['reward'] = 666.888
-    data['field'] = '不详'
-    data['document'] = '["文档串1","文档串2"]'
-    data['token'] = '19980308'
+    data['field'] = ["宠物","动物"]
+    data['document'] = ["狗（拉丁文Canis lupus familiaris）属于脊索动物门、脊椎动物亚门、哺乳纲、真兽亚纲、食肉目、裂脚亚目、犬科动物。中文亦称“犬”，狗分布于世界各地。狗与马" ,"小猫是一种人见人爱的宠物"]
+    data['token'] = '1'
     resp = requests.post(url, json.dumps(data))
     print(resp.content)
     resp = resp.json()
@@ -333,8 +226,10 @@ def send_data_to_startTask_server():
 def send_data_to_getRate_server():
 
     url = 'http://127.0.0.1:5000/api/getRate'
+    url = 'http://101.200.34.92:8081/api/entry/getRate'
+
     data = {}
-    data['taskId'] = 12345678
+    data['taskId'] = 5
 
     resp = requests.post(url, json.dumps(data))
     #print(resp.content)
@@ -355,7 +250,7 @@ def send_data_to_subTask_server():
 if __name__ == '__main__':
     #send_data_to_http_server()
     #send_data_to_startAssignTask_server()
-    send_data_to_jumpIntoAssignTask_server()
+    #send_data_to_jumpIntoAssignTask_server()
     #send_data_to_startTask_server()
-    #send_data_to_getRate_server()
+    send_data_to_getRate_server()
     #send_data_to_subTask_server()

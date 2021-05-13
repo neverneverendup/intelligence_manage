@@ -213,11 +213,11 @@ if __name__ == '__main__':
     #send_data_to_getRate_server()
     #send_data_to_subTask_server()
 
-    #get_item_info_from_gengxin_server()
+    get_item_info_from_gengxin_server()
 
     #send_data_to_taskSplit_server()
     #send_data_to_searchUserId_server()
 
     #send_data_to_updateEditItem_server()
 
-    send_data_to_userLogin_server()
+    #send_data_to_userLogin_server()
