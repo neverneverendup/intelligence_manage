@@ -3,6 +3,8 @@ import requests
 from werkzeug.exceptions import NotFound
 from datetime import date,datetime
 from apps.services.modelsCRUD import *
+from apps.services import inServices
+from apps.libs.utils import *
 
 # 测试python数据类型和json类型之间的对应关系
 def test_return_json():
@@ -69,16 +71,15 @@ def send_data_to_startAssignTask_server():
     #demand["test_data"] = {"a":100.00,"b":None,"c":["d","e","f"]}
     # data = json.dumps(demand,ensure_ascii=False)
 
-    url = 'http://127.0.0.1:5000/api/entry/startAssignTask'
+    url = 'http://101.200.34.92:8081/api/entry/startAssignTask'
     data = {}
-    data['taskId'] = 5
+    data['taskId'] = 9
     data['taskName'] = '众智化专题'
     data['description'] = '众智化专题项目测试'
-    #data['demand'] = demand
     data['reward'] = 6666.999
     data['field'] = ['生物','医学']
     data['document'] = ["猫，属于猫科动物，分家猫、野猫，是全世界家庭中较为广泛的宠物。家猫的祖先据推测是古埃及的沙漠猫，波斯的波斯猫，已经被人类驯化了3500年（但未像狗一样完全地被驯化）。一般的猫：头圆、颜面部短，前肢五指，后肢四趾，趾端具锐利而弯曲的爪，爪能伸缩。夜行性。以伏击的方式猎捕其它动物，大多能攀援上树。猫的趾底有脂肪质肉垫，以免在行走时发出声响，捕猎时也不会惊跑鼠。行进时爪子处于收缩状态，防止爪被磨钝，在捕鼠和攀岩时会伸出来。"]
-    data['token'] = '19980307'
+    data['token'] = '1'
     print(data)
     print(json.dumps(data,cls=DateEncoder))
     resp = requests.post(url, json.dumps(data,cls=DateEncoder))
@@ -204,6 +205,41 @@ def send_data_to_userLogin_server():
     resp = resp.json()
     print(resp)
 
+
+def send_data_to_huafentaskresult():
+    headers = {}
+    headers={"Content-Type": "application/json"}
+    headers["token"] = "eyJhbGciOiJIUzI1NiJ9.eyJsb2dpblR5cGUiOjAsInVzZXIiOnsiY2VsZWJyaXR5Ijp0cnVlLCJpbWciOiJcL3Jlc291cmNlc1wvdHJhZGluZ1wvdXBsb2FkXC9qcGdcL2Q0MWI5YTRjLTBlZjktNDYxYy1hMGE5LWIxOWEyN2NkMzQwOC5qcGciLCJmaXJzdExhYmxlIjoi6K6h566X5py6IiwiYXJ0aWNsZU51bSI6MCwibGV2ZWwiOjAsIndkQWNjZXB0TnVtIjoyLCJ0aGlyZExhYmxlIjoi56eR5oqAIiwiaW5kdXN0cnkiOiLorqHnrpfmnLrnp5HlraYiLCJmdHBwYXRoIjoiQzpcL2Z0cFwvYWRtaW4iLCJpc0FkbWluIjoxLCJzZWNvbmRMYWJsZSI6IuadkOaWmSIsIm1vbmV5IjozMzUsInBob25lIjoiMTMxNTIxMzQwMDAiLCJjb25jZXJuTnVtIjoxLCJpbnRlZ3JhbCI6MTg2LCJsb2dpbk5hbWUiOiJkaiIsIm5hbWUiOiLkuIHpnIEiLCJ3ZEFuc3dlck51bSI6NSwiaWQiOjI2LCJlbWFpbCI6IjEyMzQxMjQ0NDVAcXEuY29tIn0sInJhbmRvbSI6IjIxMzMzZDFiLWIwZjktNDIzZS1iYTEzLTcxN2ExYjNkMzc5NyJ9.q1EHXZXsi7VKty5QGorNdqdLXAfEX0UDeTCJvPmP8hE"
+
+    post_data = {}
+    task_id = 5
+    task = db_select_task_by_id(task_id)
+    post_data["taskId"] = task.id
+    post_data["taskName"] = task.name
+    post_data["taskType"] = 3
+    post_data["fzrId"] = task.user_id
+    header = db_select_user_by_id(task.user_id)
+    post_data["fzrName"] = header.name
+    post_data["childTasks"] = []
+
+    for sub in task.subtasks:
+        t = {}
+        t["childTaskId"] = sub.id
+        t["childTaskName"] = sub.name
+        t["childTaskDescribe"] = sub.content
+        t["childTaskMoney"] = str(sub.money)
+        t["childTaskDay"] = 10
+        # t["jgUserId"] = sub.id
+        # t["jgUserName"] = sub.id
+        post_data["childTasks"].append(t)
+
+    print(post_data)
+    url = 'http://113.207.56.4:9527/common/huaFenTaskResult'
+    resp = requests.post(url=url,headers=headers, data=json.dumps(post_data))
+    resp = resp.json()
+    print(resp)
+
+
 if __name__ == '__main__':
     #send_data_to_http_server()
     #send_data_to_startAssignTask_server()
@@ -221,3 +257,8 @@ if __name__ == '__main__':
     #send_data_to_updateEditItem_server()
 
     #send_data_to_userLogin_server()
+
+    #send_data_to_huafentaskresult()
+
+    #token = "eyJhbGciOiJIUzI1NiJ9.eyJsb2dpblR5cGUiOjAsInVzZXIiOnsiY2VsZWJyaXR5Ijp0cnVlLCJpbWciOiJcL3Jlc291cmNlc1wvdHJhZGluZ1wvdXBsb2FkXC9qcGdcL2Q0MWI5YTRjLTBlZjktNDYxYy1hMGE5LWIxOWEyN2NkMzQwOC5qcGciLCJmaXJzdExhYmxlIjoi6K6h566X5py6IiwiYXJ0aWNsZU51bSI6MCwibGV2ZWwiOjAsIndkQWNjZXB0TnVtIjoyLCJ0aGlyZExhYmxlIjoi56eR5oqAIiwiaW5kdXN0cnkiOiLorqHnrpfmnLrnp5HlraYiLCJmdHBwYXRoIjoiQzpcL2Z0cFwvYWRtaW4iLCJpc0FkbWluIjoxLCJzZWNvbmRMYWJsZSI6IuadkOaWmSIsIm1vbmV5IjozMzUsInBob25lIjoiMTMxNTIxMzQwMDAiLCJjb25jZXJuTnVtIjoxLCJpbnRlZ3JhbCI6MTg2LCJsb2dpbk5hbWUiOiJkaiIsIm5hbWUiOiLkuIHpnIEiLCJ3ZEFuc3dlck51bSI6NSwiaWQiOjI2LCJlbWFpbCI6IjEyMzQxMjQ0NDVAcXEuY29tIn0sInJhbmRvbSI6Ijk2OWQ1YTBkLTNmOTItNGYwNC04Y2ZlLTUwNzk4NjIyNTNkZCJ9.rj9PVyX0r05Nw_VLPJpD-F_YH7Eum3xLsrVB9eEVSOM"
+    #print(outside_token_validation(token))

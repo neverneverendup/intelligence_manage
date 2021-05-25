@@ -16,21 +16,20 @@ def pact_response_json_data(success, respCode, respMsg, data):
 # 外部用户token校验接口
 def outside_token_validation(token):
     url = 'http://113.207.56.4:9527/user/check'
+    header = {"Content-Type": "multipart/form-data"}
     data = {}
     data['token'] = token
-    resp = requests.post(url, json.dumps(data))
+    resp = requests.post(url=url, data=data)
     return resp.json()
-
 
 def check_and_add_user(resp, token):
     user_id = resp["data"]["data"]["id"]
-    inside_token = generate_token(user_id)
-    name=""
-    role=1
+    #inside_token = generate_token(user_id)
+    name=resp["data"]["data"]["name"]
+    #role=1
     user = User.query.get(user_id)
     if not user:
-        db_add_user_with_id(id=user, name=name, role=role, outside_token=token, inside_token=inside_token)
-        user = User.query.get(user_id)
+        user = User(id=user_id, name=name)
     return user
 
 def userTokenValidation(token):

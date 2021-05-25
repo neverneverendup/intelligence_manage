@@ -20,10 +20,10 @@ if __name__ == '__main__':
     # db_add_user_subtask_mapping(6, 2)
     # db_add_user_subtask_mapping(7, 2)
 
-    task = db_select_task_by_id(1)
-    print(task, task.hasInitialize)
-    task.initialize()
-    print(task.hasInitialize)
+    # task = db_select_task_by_id(1)
+    # print(task, task.hasInitialize)
+    # task.initialize()
+    # print(task.hasInitialize)
 
     # print(task)
     # for subt in task.subtasks:
@@ -39,3 +39,9 @@ if __name__ == '__main__':
     #test_select_task_contained_json_data()
 
     #print(db_select_item_by_id(25).serialization())
+
+
+    task = db_select_task_by_id(1)
+    print(task)
+    task.description = "火影忍者"
+    task.save()

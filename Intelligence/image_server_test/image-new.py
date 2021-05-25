@@ -58,7 +58,7 @@ def api_upload():
         print(new_filename)
         f.save(os.path.join(file_dir, new_filename))
 
-        return jsonify({"success": 0, "msg": "上传成功", "url":file_dir+'/'+new_filename})
+        return jsonify({"success": 0, "msg": "上传成功", "url":file_dir+'/'+new_filename, "filename":new_filename})
     else:
         return jsonify({"error": 1001, "msg": "上传失败"})
 

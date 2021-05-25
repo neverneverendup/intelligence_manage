@@ -10,13 +10,27 @@ app = Flask(__name__)
 app.config.from_object(config.Config)
 db = SQLAlchemy(app)
 
-class User(db.Model):
+class BaseModel(object):
+
+    def save(self):
+        """Saves the object to the database."""
+        db.session.add(self)
+        db.session.commit()
+        return self
+
+    def delete(self):
+        """Delete the object from the database."""
+        db.session.delete(self)
+        db.session.commit()
+        return self
+
+class User(db.Model, BaseModel):
     __tablename__ = 'user'
     id = db.Column(db.Integer, autoincrement=True, primary_key=True)
     name = db.Column(db.String(255),nullable=True)
     # 用户角色1 2 3 对应负责人、普通成员和审核成员
-    role = db.Column(db.Integer, nullable=False)
-    outside_token = db.Column(db.String(255),unique=True)
+    role = db.Column(db.Integer, nullable=True)
+    outside_token = db.Column(db.String(255))
     inside_token = db.Column(db.String(255),unique=True)
     subtasks = db.Column(db.String(255), default="[]")
 
@@ -55,13 +69,7 @@ class User(db.Model):
         token = s.dumps({"user_id": self.id}).decode('ascii')
         return token
 
-    # @classmethod
-    # def get_or_create(self,user_id):
-    #     user = User.query.get(user_id)
-    #     if not user:
-    #         user = User()
-
-class Task(db.Model):
+class Task(db.Model, BaseModel):
     __tablename__ = 'task'
     id = db.Column(db.Integer, autoincrement=True, primary_key=True)
     name = db.Column(db.String(255),nullable=False)
@@ -112,7 +120,7 @@ class Task(db.Model):
             data.append(it.serialization())
         return data
 
-class Subtask(db.Model):
+class Subtask(db.Model, BaseModel):
     __tablename__ = 'subtask'
     id = db.Column(db.Integer, autoincrement=True, primary_key=True)
     name = db.Column(db.String(255),nullable=True)
@@ -124,7 +132,8 @@ class Subtask(db.Model):
     task_id = db.Column(db.Integer, db.ForeignKey('task.id'))
     # 外键
     item_id = db.Column(db.Integer)
-
+    # 应聘负责人id
+    user_id = db.Column(db.Integer)
     def __repr__(self):
         return '<Subtask %r %r %r %r>' % (self.id, self.name, self.content, self.task_id)
 
@@ -147,7 +156,7 @@ class Subtask(db.Model):
             self.user_id = json.dumps(old)
         db.session.commit()
 
-class Item(db.Model):
+class Item(db.Model, BaseModel):
     __tablename__ = 'item'
     id = db.Column(db.Integer, autoincrement=True, primary_key=True)
     name = db.Column(db.String(255),nullable=True)
@@ -187,7 +196,7 @@ class Item(db.Model):
             "has_selected_supply":self.has_selected_supply
         }
 
-class Validator_Item_Mapping(db.Model):
+class Validator_Item_Mapping(db.Model, BaseModel):
     __tablename__ = 'validator_item_mapping'
     id = db.Column(db.Integer, autoincrement=True, primary_key=True)
     item_id = db.Column(db.Integer)

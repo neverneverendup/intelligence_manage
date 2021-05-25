@@ -3,25 +3,33 @@ from werkzeug.exceptions import NotFound
 from apps.libs.utils import *
 
 def ssologin(token):
-    # resp = outside_token_validation(token)
-    # print(resp)
-    # if resp["success"] == False:
-    #     return False, None
-    # user = check_and_add_user(resp=resp, token=token)
-    user = User.query.get(int(token))
+
+    resp = outside_token_validation(token)
+    print(resp)
+
+    if resp["success"] == False or "success" not in resp.keys():
+        return False, None
+    user = check_and_add_user(resp=resp, token=token)
+    #user = User.query.get(int(token))
     return True, user
 
-def startAssignTask(id, name, description, reward, field, document, token):
-    flag, user = ssologin(token)
-    if not flag:
-        return pact_response_json_data(False, "-1", "用户校验失败", None)
+def startAssignTask(id, name, description, reward, field, document):
+    #flag, user = ssologin(token)
+    # print(flag, user)
+    # if not flag:
+    #     return pact_response_json_data(False, "-1", "用户校验失败", None)
 
-    result = send_task_info_to_gengxin_server(id,description,document)
-    if result["status"] == "success":
-        # 插入初始化词条
-        initTaskItems(result)
+    # result = send_task_info_to_gengxin_server(id,description,document)
+    # if result["status"] == "success":
+    #     # 插入初始化词条
+    #     initTaskItems(result)
+    task = db_select_task_by_id(id)
+    if task:
+        return pact_response_json_data(False, "-1", "失败，任务id已存在", None)
 
-    db_add_task(id, name, description, reward, json.dumps(field, ensure_ascii=False), json.dumps(document, ensure_ascii=False), user.id)
+    db_add_task(id, name, description, reward, json.dumps(field, ensure_ascii=False), json.dumps(document, ensure_ascii=False),user_id=-1)
+    task = db_select_task_by_id(id)
+    task.initialize()
     return pact_response_json_data(True,"0","操作成功",None)
 
 # 这个接口插入数据默认值有待继续调整，不知道为何空串json不能解析出来
@@ -91,21 +99,10 @@ def jumpIntoAssignTask(id):
     data['items'] = items_data
     return pact_response_json_data(True, "0", "成功", data)
 
-
-def resultNotice(post_data):
-    url = 'http:// 113.207.56.4:9527/process/task/resultNotice'
-    resp = requests.post(url, json.dumps(post_data, ensure_ascii=False))
-    # print(resp.content)
-    resp = resp.json()
-    print(resp)
-    if resp['success'] == True:
-        print("任务划分结果数据发送成功！")
-        print(resp['data'])
-    return resp
-
 # 现在的resultFileType还都是字符串类型
 def startTask(taskId, resultFileType, member):
     errMsg = ""
+    header_id = 0
     try:
         task = db_select_task_by_id(taskId)
     except NotFound as e:
@@ -116,19 +113,27 @@ def startTask(taskId, resultFileType, member):
         uid = m['userId']
         user = db_select_user_by_id(uid)
         if not user:
-            print('当前角色用户预定义角色不匹配')
-            errMsg += '当前用户不存在'
-            return pact_response_json_data(False, "-1", "操作失败 " + errMsg, None)
-        role = m['role']
-        if role != user.role:
-            print('当前用户角色与预定义角色不匹配')
-            errMsg += '当前用户角色与预定义角色不匹配'
-            return pact_response_json_data(False, "-1", "操作失败 " +errMsg, None)
+            user = User(id=uid, role=m["role"])
+            user.save()
+        else:
+            user.role = m["role"]
+            user.save()
+
+        if m["role"] == 1:
+            header_id = m['userId']
+            task.user_id = m['userId']
+            task.save()
+
         user.add_subtask(m['subTaskId'])
 
     # 更新任务信息
     task.resultFileType = resultFileType
-    db_update_task(task)
+    task.save()
+
+    # 确定任务划分结果之后, 新建词条
+    if header_id != 0:
+        db_batch_insert_items(user_id=header_id, task_id=task.id)
+
     return pact_response_json_data(True, "0", "操作成功", None)
 
 def add_validator_item_mapping(user_id, item_id, result, content):
@@ -142,15 +147,17 @@ def changeTask(taskId, DetailsTaskId, userId, userName):
         task = db_select_task_by_id(taskId)
     except NotFound as e:
         print(e)
-        return pact_response_json_data(False, 404, "任务未找到", None)
+        return pact_response_json_data(False, "404", "任务未找到", None)
 
     # 更新任务信息
     user = db_select_user_by_id(userId)
     subtask = db_select_subtask_by_id(DetailsTaskId)
     if not user:
-        return pact_response_json_data(False, 404, "用户不存在", None)
+        db_add_user_with_id(id=userId, name=userName)
+        user = User.query.get(userId)
+        #return pact_response_json_data(False, "404", "用户不存在", None)
     if not subtask:
-        return pact_response_json_data(False, 404, "子任务不存在", None)
+        return pact_response_json_data(False, "404", "子任务不存在", None)
 
     users = User.query.all()
     for u in users:

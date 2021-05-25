@@ -3,13 +3,13 @@ from apps.models.model import User, Item, Task, Subtask, db, Validator_Item_Mapp
 
 def db_add_user(name, role, token):
     # 1 2 3 对应管理者 普通人员 审核人员
-    user = User(name=name, role=role, token=token)
+    user = User(name=name, role=role, outside_token=token)
     db.session.add(user)
     db.session.commit()
 
-def db_add_user_with_id(id, name, role, token):
+def db_add_user_with_id(id, name):
     # 1 2 3 对应管理者 普通人员 审核人员
-    user = User(id=id, name=name, role=role, token=token)
+    user = User(id=id, name=name)
     db.session.add(user)
     db.session.commit()
 
@@ -26,9 +26,9 @@ def db_add_item(name, original_id, relation, field, info_box, intro, imageUrl, c
     db.session.add(item)
     db.session.commit()
 
-def db_add_subtask(name, content, money, type, itemCount, task_id):
+def db_add_subtask(name, content, money, type, itemCount, task_id,user_id):
     task = Task.query.filter(Task.id==task_id).first()
-    subtask = Subtask(name=name, content=content, money=money, type=type, itemCount=itemCount, task=task)
+    subtask = Subtask(name=name, content=content, money=money, type=type, itemCount=itemCount, task=task,user_id=user_id)
     db.session.add(subtask)
     db.session.commit()
 
@@ -42,29 +42,41 @@ def db_add_insert_subtask(name, content, money, type, task_id):
     db.session.add(subtask)
     db.session.commit()
 
-def db_add_batch_insert_subtask(name, content, money, type, task_id, itemCount):
+def db_add_batch_insert_subtask(name, content, money, type, task_id, itemCount,user_id):
 
     latest_item_id = Item.query.order_by(Item.id.desc()).first().id
-    item_list = []
+    #item_list = []
     subtask_list = []
     for idx in range(1, itemCount+1):
-        nid = latest_item_id + idx
-        item = Item(name="", status=0, task_id=task_id, field="[]",info_box="[]", relation="[]",reference="[]")
-        item_list.append(item)
-        subtask = Subtask(name=name, content=content, money=money, type=type, task_id=task_id, item_id=nid)
+        #nid = latest_item_id + idx
+        #item = Item(name="", status=0, task_id=task_id, field="[]",info_box="[]", relation="[]",reference="[]")
+        #item_list.append(item)
+        subtask = Subtask(name=name, content=content, money=money, type=type, task_id=task_id, user_id=user_id)
         subtask_list.append(subtask)
 
-    db.session.add_all(item_list + subtask_list)
+    #db.session.add_all(item_list + subtask_list)
+    db.session.add_all(subtask_list)
     db.session.commit()
 
-def db_add_batch_supply_subtask(name, content, money, type, task_id, inited_item_ids):
+def db_batch_insert_items(user_id, task_id):
+    # 首先检索当前负责人新建任务
+    #db_select_subtask_by_id()
+    subtasks = Subtask.query.filter_by(user_id=user_id, task_id=task_id).all()
+    print(subtasks)
+    for sub in subtasks:
+        item = Item(name="", status=0, task_id=task_id, field="[]",info_box="[]", relation="[]",reference="[]")
+        item.save()
+        sub.item_id = item.id
+        sub.save()
+
+def db_add_batch_supply_subtask(name, content, money, type, task_id, inited_item_ids,user_id):
     subtask_list = []
     for item_id in inited_item_ids:
         item = db_select_item_by_id(item_id)
         if item:
             item.has_selected_supply = 1
             db_update_item(item)
-        subtask = Subtask(name=name, content=content, money=money, type=type, task_id=task_id, item_id=item_id)
+        subtask = Subtask(name=name, content=content, money=money, type=type, task_id=task_id, item_id=item_id,user_id=user_id)
         subtask_list.append(subtask)
 
     db.session.add_all(subtask_list)
@@ -216,4 +228,6 @@ if __name__ == '__main__':
     #test_add_task_insert_json_data()
     #test_select_task_contained_json_data()
 
-    db_select_item_by_id(25)
+    #db_select_item_by_id(25)
+
+    db_batch_insert_items(user_id=1, task_id=5)

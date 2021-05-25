@@ -11,7 +11,10 @@ def api_startAssignTask():
         data = request.get_data()
         data = json.loads(data)
         print(data)
-        return outServices.startAssignTask(data['taskId'], data['taskName'], data['description'], data['reward'], data['field'], data['document'], data['token'])
+        if 'description' not in data.keys():
+            data['description'] = ''
+            print('description为空')
+        return outServices.startAssignTask(data['taskId'], data['taskName'], data['description'], data['reward'], data['field'], data['document'])
     return 'you see this /startAssignTask in get!'
 
 @api.route('/resultNotice', methods=['POST'])
@@ -80,7 +83,7 @@ def taskSplit():
         data = request.get_data()
         data = json.loads(data)
         print(data)
-        return inServices.taskSplit(data["task_id"], data["subtask"])
+        return inServices.taskSplit(data["task_id"], data["subtask"],data["inside_token"])
 
 @inside_api.route('/searchUserId', methods=['GET','POST'])
 @auth.login_required
