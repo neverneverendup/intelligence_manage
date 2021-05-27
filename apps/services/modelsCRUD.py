@@ -143,7 +143,7 @@ def db_select_user_by_token(token):
     return user
 
 def db_select_task_by_id(id):
-    return Task.query.get_or_404(id)
+    return Task.query.get(id)
 
 def db_select_item_by_id(id):
     #with app.app_context():

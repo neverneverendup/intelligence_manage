@@ -68,12 +68,11 @@ class DateEncoder(json.JSONEncoder):
             return json.JSONEncoder.default(self, obj)
 
 def send_data_to_startAssignTask_server():
-    #demand["test_data"] = {"a":100.00,"b":None,"c":["d","e","f"]}
-    # data = json.dumps(demand,ensure_ascii=False)
-
     url = 'http://101.200.34.92:8081/api/entry/startAssignTask'
+    #url = 'http://127.0.0.1:5000/api/entry/startAssignTask'
+
     data = {}
-    data['taskId'] = 9
+    data['taskId'] = 7
     data['taskName'] = '众智化专题'
     data['description'] = '众智化专题项目测试'
     data['reward'] = 6666.999
@@ -101,11 +100,11 @@ def send_data_to_jumpIntoAssignTask_server():
 
 def send_data_to_startTask_server():
 
-    url = 'http://127.0.0.1:5000/api/entry/startTask'
+    url = 'http://101.200.34.92:8081/api/entry/startTask'
     data = {}
-    data['taskId'] = 5
+    data['taskId'] = 6
     data['resultFileType'] = 'pdf'
-    data['member'] = [{"userId":8,"role":2,"subTaskId":[108,109,110,111,112]},{"userId":5,"role":2,"subTaskId":[116]}, {"userId":9,"role":3,"subTaskId":[115]},{"userId":6,"role":3,"subTaskId":[114]},{"userId":7,"role":3,"subTaskId":[113]}]
+    data['member'] = [{"userId":26,"role":1,"subTaskId":[17]},{"userId":6,"role":3,"subTaskId":[416]}]
 
     resp = requests.post(url, json.dumps(data))
     #print(resp.content)
@@ -114,24 +113,35 @@ def send_data_to_startTask_server():
 
 
 def send_data_to_taskSplit_server():
-    url = 'http://127.0.0.1:5000/api/entry/taskSplit'
+
+    #url = 'http://127.0.0.1:5000/api/entry/taskSplit'
+    url = 'http://101.200.34.92:8081/inside_api/entry/taskSplit'
+    inside_token = 'eyJhbGciOiJIUzUxMiIsImlhdCI6MTYyMjEwMTI1NCwiZXhwIjoxNjIyMTA0ODU0fQ.eyJ1c2VyX2lkIjoyNn0.X7-RGfM_mdhqZ3nsl1KulpRqmCKtAvke0NrFCLXZ_iQONmA_n6pui6Uo5cN8_7AAme9Yx5i_VonedPEqirnmYA'
+    headers = {'Authorization' : 'JWT '+ inside_token}
+
     data = {}
-    data['task_id'] = 5
-    data['token'] = "19980307"
-    data["subtask"] =[{"name":"新建词条","content":"新建3条词条","type":1,"money":500.00,"itemCount":5},{"name":"审核词条","content":"需要五个审核人员，审核词条,itemCount代表审核人员数量","type":3,"money":500.00,"itemCount":[1,2,2]},{"name":"完善词条","content":"完善初始化词条","type":2,"money":100.00,"itemCount":5,"inited_item_ids":[119]}]
+    data['task_id'] = 6
+    data['outside_token'] = "eyJhbGciOiJIUzI1NiJ9.eyJsb2dpblR5cGUiOjAsInVzZXIiOnsiY2VsZWJyaXR5Ijp0cnVlLCJpbWciOiJcL3Jlc291cmNlc1wvdHJhZGluZ1wvdXBsb2FkXC9qcGdcL2Q0MWI5YTRjLTBlZjktNDYxYy1hMGE5LWIxOWEyN2NkMzQwOC5qcGciLCJmaXJzdExhYmxlIjoi6K6h566X5py6IiwiYXJ0aWNsZU51bSI6MCwibGV2ZWwiOjAsIndkQWNjZXB0TnVtIjoyLCJ0aGlyZExhYmxlIjoi56eR5oqAIiwiaW5kdXN0cnkiOiLorqHnrpfmnLrnp5HlraYiLCJmdHBwYXRoIjoiQzpcL2Z0cFwvYWRtaW4iLCJpc0FkbWluIjoxLCJzZWNvbmRMYWJsZSI6IuadkOaWmSIsIm1vbmV5IjozMzUsInBob25lIjoiMTMxNTIxMzQwMDAiLCJjb25jZXJuTnVtIjoxLCJpbnRlZ3JhbCI6MTg2LCJsb2dpbk5hbWUiOiJkaiIsIm5hbWUiOiLkuIHpnIEiLCJ3ZEFuc3dlck51bSI6NSwiaWQiOjI2LCJlbWFpbCI6IjEyMzQxMjQ0NDVAcXEuY29tIn0sInJhbmRvbSI6ImNiMjIxMjEzLTIzZTMtNDk0ZC1iZmFjLTU0NzZhN2IyNWJmMSJ9.sWNGGJ3cMjKeMQz1lI0-kKvTAQ9w7TSLSqWNgaZI6no"
+    data['inside_token'] = inside_token
+    data['fbzId'] = 99
+
+    data["subtask"] =[{"name":"新建词条","content":"新建3条词条","type":1,"money":500.00,"itemCount":5},{"name":"审核词条","content":"需要五个审核人员，审核词条,itemCount代表审核人员数量","type":3,"money":500.00,"itemTable":[1,2,2]},{"name":"完善词条","content":"完善初始化词条","type":2,"money":100.00,"itemTable":[119]}]
     # 新的审核任务
-    resp = requests.post(url, json.dumps(data))
-    #print(resp.content)
-    resp = resp.json()
+    resp = requests.post(url=url, headers=headers, data=json.dumps(data))
+    if resp.status_code == 401:
+        print('内部token校验失败')
+    else:
+        print(resp.status_code)
+        resp = resp.json()
     print(resp)
 
 def send_data_to_changeTask_server():
-    url = 'http://127.0.0.1:5000/api/entry/changeTask'
+    url = 'http://101.200.34.92:8081/api/entry/changeTask'
     data = {}
-    data['taskId'] = 5
-    data['DetailsTaskId'] = 111
-    data['userID'] = 3
-    data['userName'] = "jay"
+    data['taskId'] = 6
+    data['DetailsTaskId'] = 417
+    data['userID'] = 8
+    data['userName'] = "dul"
 
     # 新的审核任务
     resp = requests.post(url, json.dumps(data))
@@ -141,19 +151,19 @@ def send_data_to_changeTask_server():
 
 def send_data_to_getRate_server():
 
-    url = 'http://127.0.0.1:5000/api/entry/getRate'
+    url = 'http://101.200.34.92:8081/api/entry/getRate'
     data = {}
-    data['taskId'] = 5
+    data['taskId'] = 6
     resp = requests.post(url, json.dumps(data))
     resp = resp.json()
     print(resp)
 
 def send_data_to_subTask_server():
 
-    url = 'http://127.0.0.1:5000/api/entry/subTask'
+    url = 'http://101.200.34.92:8081/api/entry/subTask'
     data = {}
     data['taskId'] = 5
-    data['token'] = "19980101"
+    data['token'] = 'eyJhbGciOiJIUzI1NiJ9.eyJsb2dpblR5cGUiOjAsInVzZXIiOnsiY2VsZWJyaXR5Ijp0cnVlLCJpbWciOiJcL3Jlc291cmNlc1wvdHJhZGluZ1wvdXBsb2FkXC9qcGdcL2Q0MWI5YTRjLTBlZjktNDYxYy1hMGE5LWIxOWEyN2NkMzQwOC5qcGciLCJmaXJzdExhYmxlIjoi6K6h566X5py6IiwiYXJ0aWNsZU51bSI6MCwibGV2ZWwiOjAsIndkQWNjZXB0TnVtIjoyLCJ0aGlyZExhYmxlIjoi56eR5oqAIiwiaW5kdXN0cnkiOiLorqHnrpfmnLrnp5HlraYiLCJmdHBwYXRoIjoiQzpcL2Z0cFwvYWRtaW4iLCJpc0FkbWluIjoxLCJzZWNvbmRMYWJsZSI6IuadkOaWmSIsIm1vbmV5IjozMzUsInBob25lIjoiMTMxNTIxMzQwMDAiLCJjb25jZXJuTnVtIjoxLCJpbnRlZ3JhbCI6MTg2LCJsb2dpbk5hbWUiOiJkaiIsIm5hbWUiOiLkuIHpnIEiLCJ3ZEFuc3dlck51bSI6NSwiaWQiOjI2LCJlbWFpbCI6IjEyMzQxMjQ0NDVAcXEuY29tIn0sInJhbmRvbSI6IjVjY2FjZWIzLTY0NjctNGE4Yi1iMDdmLTg2ZTJlM2U4YjBlNSJ9.JNBzqhty1fVyl8s871FFZd2jF7ieQ8N41qoQaiPx044'
     resp = requests.post(url, json.dumps(data))
     resp = resp.json()
     print(resp)
@@ -198,9 +208,9 @@ def send_data_to_updateEditItem_server():
     print(resp)
 
 def send_data_to_userLogin_server():
-    url = 'http://127.0.0.1:5000/inside_api/entry/userLogin'
+    url = 'http://101.200.34.92:8081/inside_api/entry/userLogin'
     data = {}
-    data['token'] = '1231212312'
+    data['token'] = 'eyJhbGciOiJIUzI1NiJ9.eyJsb2dpblR5cGUiOjAsInVzZXIiOnsiY2VsZWJyaXR5Ijp0cnVlLCJpbWciOiJcL3Jlc291cmNlc1wvdHJhZGluZ1wvdXBsb2FkXC9qcGdcL2Q0MWI5YTRjLTBlZjktNDYxYy1hMGE5LWIxOWEyN2NkMzQwOC5qcGciLCJmaXJzdExhYmxlIjoi6K6h566X5py6IiwiYXJ0aWNsZU51bSI6MCwibGV2ZWwiOjAsIndkQWNjZXB0TnVtIjoyLCJ0aGlyZExhYmxlIjoi56eR5oqAIiwiaW5kdXN0cnkiOiLorqHnrpfmnLrnp5HlraYiLCJmdHBwYXRoIjoiQzpcL2Z0cFwvYWRtaW4iLCJpc0FkbWluIjoxLCJzZWNvbmRMYWJsZSI6IuadkOaWmSIsIm1vbmV5IjozMzUsInBob25lIjoiMTMxNTIxMzQwMDAiLCJjb25jZXJuTnVtIjoxLCJpbnRlZ3JhbCI6MTg2LCJsb2dpbk5hbWUiOiJkaiIsIm5hbWUiOiLkuIHpnIEiLCJ3ZEFuc3dlck51bSI6NSwiaWQiOjI2LCJlbWFpbCI6IjEyMzQxMjQ0NDVAcXEuY29tIn0sInJhbmRvbSI6ImNiMjIxMjEzLTIzZTMtNDk0ZC1iZmFjLTU0NzZhN2IyNWJmMSJ9.sWNGGJ3cMjKeMQz1lI0-kKvTAQ9w7TSLSqWNgaZI6no'
     resp = requests.post(url, data=json.dumps(data))
     resp = resp.json()
     print(resp)
@@ -247,9 +257,9 @@ if __name__ == '__main__':
     #send_data_to_startTask_server()
     #send_data_to_changeTask_server()
     #send_data_to_getRate_server()
-    #send_data_to_subTask_server()
+    send_data_to_subTask_server()
 
-    get_item_info_from_gengxin_server()
+    #get_item_info_from_gengxin_server()
 
     #send_data_to_taskSplit_server()
     #send_data_to_searchUserId_server()

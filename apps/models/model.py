@@ -1,10 +1,8 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask import Flask
-import pymysql
 from .. import config
 import json
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
-import datetime
 
 app = Flask(__name__)
 app.config.from_object(config.Config)
@@ -24,7 +22,9 @@ class BaseModel(object):
         db.session.commit()
         return self
 
+
 class User(db.Model, BaseModel):
+
     __tablename__ = 'user'
     id = db.Column(db.Integer, autoincrement=True, primary_key=True)
     name = db.Column(db.String(255),nullable=True)
@@ -47,11 +47,14 @@ class User(db.Model, BaseModel):
         }
 
     def add_subtask(self, subtaskId):
+        if not subtaskId:
+            return
+
         if not self.subtasks:
             self.subtasks = json.dumps(subtaskId)
         else:
             old = json.loads(self.subtasks)
-            old = old + [subtaskId]
+            old = list(set(old + subtaskId))
             self.subtasks = json.dumps(old)
         db.session.commit()
 
@@ -64,19 +67,20 @@ class User(db.Model, BaseModel):
         db.session.commit()
 
     def create_token(self):
-        s = Serializer(config.Config.SECRET_KEY)
         # 接收用户id转换与编码
+        s = Serializer(config.Config.SECRET_KEY)
         token = s.dumps({"user_id": self.id}).decode('ascii')
         return token
 
+
 class Task(db.Model, BaseModel):
+
     __tablename__ = 'task'
     id = db.Column(db.Integer, autoincrement=True, primary_key=True)
     name = db.Column(db.String(255),nullable=False)
     description = db.Column(db.TEXT)
     reward = db.Column(db.DECIMAL(20,6),nullable=True)
     field = db.Column(db.String(255),nullable=True)
-    # 文档可能要存Json
     document = db.Column(db.TEXT)
     user_id = db.Column(db.Integer,nullable=False)
     resultFileType = db.Column(db.String(30), nullable=True)
@@ -90,7 +94,6 @@ class Task(db.Model, BaseModel):
         return '<Task %r %r %r>' % (self.id, self.name, self.description)
 
     def serialization(self):
-        #print(type(self.reward))
         return {
             "task_id":self.id,
             "name":self.name,
@@ -102,17 +105,9 @@ class Task(db.Model, BaseModel):
             "hasInitialize":self.hasInitialize
         }
 
-    # def get_header_id(self):
-    #     header = User.query.filter(User.token==self.token).first()
-    #     if header:
-    #         return header.id
-    #     else:
-    #         return None
-
     def initialize(self):
         self.hasInitialize = 1
-        db.session.add(self)
-        db.session.commit()
+        self.save()
 
     def get_items(self):
         data = []
@@ -120,7 +115,9 @@ class Task(db.Model, BaseModel):
             data.append(it.serialization())
         return data
 
+
 class Subtask(db.Model, BaseModel):
+
     __tablename__ = 'subtask'
     id = db.Column(db.Integer, autoincrement=True, primary_key=True)
     name = db.Column(db.String(255),nullable=True)
@@ -134,6 +131,7 @@ class Subtask(db.Model, BaseModel):
     item_id = db.Column(db.Integer)
     # 应聘负责人id
     user_id = db.Column(db.Integer)
+
     def __repr__(self):
         return '<Subtask %r %r %r %r>' % (self.id, self.name, self.content, self.task_id)
 
@@ -154,18 +152,19 @@ class Subtask(db.Model, BaseModel):
             old = json.loads(self.user_id)
             old.append(uid)
             self.user_id = json.dumps(old)
-        db.session.commit()
+        self.save()
+
 
 class Item(db.Model, BaseModel):
+
     __tablename__ = 'item'
     id = db.Column(db.Integer, autoincrement=True, primary_key=True)
     name = db.Column(db.String(255),nullable=True)
     content = db.Column(db.TEXT, nullable=True)
     imageUrl = db.Column(db.String(255), nullable=True)
-    status = db.Column(db.Integer, nullable=False) # 1 2 3 已创建 已完成 已审核
-    isInitialize = db.Column(db.Integer, default=0)
-    # 0 刚创建， 1已初始化  2 待完善 3 等待审核中 4 通过审核 5 未审核通过，需要继续编辑
     # 0 空状态  1 初始化状态 2 待编辑状态 3 待审核状态 4 审核未通过状态 5 已审核状态
+    status = db.Column(db.Integer, nullable=False)
+    isInitialize = db.Column(db.Integer, default=0)
     field = db.Column(db.String(255), nullable=True, default="[]")
     info_box = db.Column(db.TEXT, nullable=True, default="[]")
     intro = db.Column(db.TEXT, default="")
@@ -196,7 +195,9 @@ class Item(db.Model, BaseModel):
             "has_selected_supply":self.has_selected_supply
         }
 
+
 class Validator_Item_Mapping(db.Model, BaseModel):
+
     __tablename__ = 'validator_item_mapping'
     id = db.Column(db.Integer, autoincrement=True, primary_key=True)
     item_id = db.Column(db.Integer)

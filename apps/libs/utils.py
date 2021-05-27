@@ -1,8 +1,7 @@
-import json
 from ..services.modelsCRUD import *
-from apps.auth.auth import *
 from datetime import date, datetime
 import requests
+
 
 def pact_response_json_data(success, respCode, respMsg, data):
     respones_data = {}
@@ -13,6 +12,16 @@ def pact_response_json_data(success, respCode, respMsg, data):
     #print(respones_data)
     return json.dumps(respones_data, ensure_ascii=False,cls=DateEncoder)
 
+
+def ssologin(token):
+    resp = outside_token_validation(token)
+    print(resp)
+    if  "success" not in resp.keys() or resp["success"] == False:
+        return False, None
+    user = check_and_add_user(resp=resp, token=token)
+    return True, user
+
+
 # 外部用户token校验接口
 def outside_token_validation(token):
     url = 'http://113.207.56.4:9527/user/check'
@@ -22,28 +31,16 @@ def outside_token_validation(token):
     resp = requests.post(url=url, data=data)
     return resp.json()
 
+
 def check_and_add_user(resp, token):
     user_id = resp["data"]["data"]["id"]
-    #inside_token = generate_token(user_id)
     name=resp["data"]["data"]["name"]
-    #role=1
     user = User.query.get(user_id)
     if not user:
         user = User(id=user_id, name=name)
+    user.name = name
     return user
 
-def userTokenValidation(token):
-    user = db_select_user_by_token(token)
-    if not user:
-        return False
-    return True
-
-def token_type_validation(token):
-    print(type(token))
-    if type(token)==str:
-        return True
-    else:
-        return False
 
 def user_role_subtask_type_validation(user_id, subtask_id):
     subtask = db_select_subtask_by_id(subtask_id)

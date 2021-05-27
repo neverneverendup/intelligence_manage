@@ -1,4 +1,4 @@
-from flask import request, jsonify, Blueprint
+from flask import request, Blueprint
 import json
 from apps.auth.auth import auth
 from apps.services import outServices, inServices
@@ -83,7 +83,7 @@ def taskSplit():
         data = request.get_data()
         data = json.loads(data)
         print(data)
-        return inServices.taskSplit(data["task_id"], data["subtask"],data["inside_token"])
+        return inServices.taskSplit(data["task_id"], data["subtask"],data["inside_token"], data["outside_token"], data["fbzId"])
 
 @inside_api.route('/searchUserId', methods=['GET','POST'])
 @auth.login_required
@@ -91,7 +91,6 @@ def searchUserId():
     if request.method == 'POST':
         data = request.get_data()
         data = json.loads(data)
-        #inServices.searchUserId(data["userId"], data["taskId"])
         print(data)
         return inServices.searchUserId(data["user_id"], data["task_id"])
 

@@ -2,17 +2,6 @@
 from werkzeug.exceptions import NotFound
 from apps.libs.utils import *
 
-def ssologin(token):
-
-    resp = outside_token_validation(token)
-    print(resp)
-
-    if resp["success"] == False or "success" not in resp.keys():
-        return False, None
-    user = check_and_add_user(resp=resp, token=token)
-    #user = User.query.get(int(token))
-    return True, user
-
 def startAssignTask(id, name, description, reward, field, document):
     #flag, user = ssologin(token)
     # print(flag, user)
@@ -74,55 +63,27 @@ def initTaskItems(result):
 
     task.initialize()
 
-# 把发送过去的所有数据全部都接收并存在vue中，等任务负责人划分完任务后，把子任务信息和专题信息一并发送给课题组屋的resultNotice接口
-def jumpIntoAssignTask(id):
-    # 跳转进入任务划分界面
-    try:
-        task = db_select_task_by_id(id)
-    except NotFound as e:
-        print(e)
-        return pact_response_json_data(False, "-1", "任务未找到", None)
-
-    # flag, user = ssologin(token)
-    # if not flag:
-    #     return pact_response_json_data(False, "-1", "用户校验失败", None)
-
-    print(task.hasInitialize)
-    if task.hasInitialize == 0 :
-        print('未通过')
-        return pact_response_json_data(False, "-1", "稍作等待，任务未初始化完毕", None)
-    print('已通过')
-    task_data = task.serialization()
-    items_data = task.get_items()
-    data = {}
-    data['task'] = task_data
-    data['items'] = items_data
-    return pact_response_json_data(True, "0", "成功", data)
-
 # 现在的resultFileType还都是字符串类型
 def startTask(taskId, resultFileType, member):
-    errMsg = ""
+
     header_id = 0
-    try:
-        task = db_select_task_by_id(taskId)
-    except NotFound as e:
-        print(e)
-        return pact_response_json_data(False, 404, "任务未找到", None)
+    task = db_select_task_by_id(taskId)
+    if not task:
+        return pact_response_json_data(False, "-1", "任务未找到", None)
 
     for m in member:
         uid = m['userId']
         user = db_select_user_by_id(uid)
         if not user:
             user = User(id=uid, role=m["role"])
-            user.save()
         else:
             user.role = m["role"]
-            user.save()
+        user.save()
 
         if m["role"] == 1:
             header_id = m['userId']
             task.user_id = m['userId']
-            task.save()
+            #continue
 
         user.add_subtask(m['subTaskId'])
 
@@ -142,32 +103,36 @@ def add_validator_item_mapping(user_id, item_id, result, content):
 
 # 这里变更的话，要取消子任务的之前人员，并且不需要用户名，需要和汪松反馈
 def changeTask(taskId, DetailsTaskId, userId, userName):
-    errMsg = ""
-    try:
-        task = db_select_task_by_id(taskId)
-    except NotFound as e:
-        print(e)
-        return pact_response_json_data(False, "404", "任务未找到", None)
+
+    task = db_select_task_by_id(taskId)
+    if not task:
+        return pact_response_json_data(False, "-1", "任务不存在", None)
 
     # 更新任务信息
     user = db_select_user_by_id(userId)
     subtask = db_select_subtask_by_id(DetailsTaskId)
     if not user:
-        db_add_user_with_id(id=userId, name=userName)
-        user = User.query.get(userId)
-        #return pact_response_json_data(False, "404", "用户不存在", None)
+        user = User(id=userId, name=userName)
+        user.save()
+
     if not subtask:
-        return pact_response_json_data(False, "404", "子任务不存在", None)
+        return pact_response_json_data(False, "-2", "子任务不存在", None)
+
+    if subtask not in task.subtasks:
+        return pact_response_json_data(False, "-3", "任务下不存在当前子任务", None)
 
     users = User.query.all()
     for u in users:
         if DetailsTaskId in json.loads(u.subtasks):
             u.remove_subtask(DetailsTaskId)
-    user.add_subtask(DetailsTaskId)
+    user.add_subtask([DetailsTaskId])
     return pact_response_json_data(True, "0", "操作成功", None)
 
 def getRate(taskId):
     task = db_select_task_by_id(taskId)
+    if not task:
+        return pact_response_json_data(False, "-1", "任务不存在", None)
+
     total_subtask_count = 0.0
     done_subtask_count = 0.0
     user_finished_status = []
@@ -231,6 +196,7 @@ def subTask(taskId, token):
     task = db_select_task_by_id(taskId)
     if not task:
         return pact_response_json_data(False, "-1", "未找到id对应任务", None)
+
     subtask_ids = json.loads(user.subtasks)
     print(subtask_ids)
     data = []
